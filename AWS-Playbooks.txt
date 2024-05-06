@@ -1,0 +1,71 @@
+Steps to Automate AWS infra through Ansible:
+1)Create user in aws and generate Access key and secret key and downlad it.
+2)Attach policy - AWSFull acess (to user)
+3)Launch instance and setup Ansible
+1)Launch t2.micro and install ansible-doc
+2)install ansible
+-->yum install wget
+-->wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+-->rpm -ivh epel-release-latest7.noarch.rpm
+-->sudo yum -y update
+-->sudo yum install python python-pip open-ssl ansible
+-->ansible --version
+4)yum -y install pyhthon-pip
+5)install boto3 package (pip install boto3)
+6)python -m pip install awscli
+7)pip install boto
+8)yum install boto(use this command if playbook throwing an error)
+
+1)yum update -y
+2)yum -y install wget
+3)wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+4)rpm -ivh epel-release-latest7.noarch.rpm
+5)yum update -y
+6)yum -y install ansible python python-pip open-ssl
+7)ansible --versin
+8)pip install boto3
+9)yum -y install awscli
+10)aws configure(enter secret key and access key)
+while running playboks if you face any error follow the below
+1)pip install boto
+2)yum -y install boto
+3)go to
+[]cd /etc/ansible
+[]vi hosts
+enter below parameter
+localhost
+---------------------------
+Sample Playbooks:
+---
+- hosts: localhost
+  connection: local
+  remote_user: root
+  become: yes
+  gather_facts: no
+  tasks:
+  - name: creating VPC
+    ec2_vpc_net:
+      region: us-east-1
+      name: myvpcyum
+      state: present
+      cidr_block: 20.0.0.0/16
+-------------------
+
+---
+- hosts: localhost
+  connection: local
+  remote_user: pavani
+  become: yes
+  gather_facts: no
+  tasks:
+  - name: creating ec2
+    ec2:
+      region: us-east-1
+      image: ami-040903569d18d3cde
+      instance_type: t2.micro
+      count: 1
+      group_id: sg-5c5b0572
+      key_name: abc
+      vpc_subnet_id: subnet-cf11b8c1
+      assign_public_ip: yes
+------------------

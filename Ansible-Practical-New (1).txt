@@ -1,0 +1,394 @@
+Both master and node
+1)cd /etc
+2)vi hosts
+172.31.24.17 server1.abc.com server1
+172.31.23.71 server2.abc.com server2
+172.31.24.185 server3.abc.com server3
+3)Reboot servers
+------------------------------------
+Only in Master
+-->yum -y install wget
+-->wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+-->ls -la
+-->rpm -ivh epel-release-latest-7.noarch.rpm
+-->sudo yum -y update
+-->sudo yum install  python python-pip open-ssl ansible
+-->ansible --version
+------------------------------------
+Only in master
+setting inventory
+[]cd /etc/ansible/
+[]vi hosts
+[webserver]
+private ip adydress of the node
+-----------------------------------
+c)To establish ssh connection(Both master and Node)
+-->To establish ssh connection among all nodes make the below changes
+-->Go to below path and do the following changes
+[]cd /etc/ssh
+[]vi sshd_config
+  permitRootLogin yes(uncomment line set to yes)(not req)
+  passwordAuthentication yes(uncomment line set to "yes") (not req)
+--------------------------------
+Genrate ssh key in Master
+[]cd /etc/ansible
+[]ssh-keygen
+----------------------------------
+Copy ssh key from master
+[]cd (u should in root path)
+[]cd .ssh
+[]cat id_rsa.pub
+copy the key
+---------------------------------
+Paste the Key in the Node
+[]cd .ssh
+[]vi authorized_keys
+paste here
+----------------------------------
+In master
+checking
+[]ansible -m ping ip
+[] ansible nodeip -m yum -a "name=httpd state=installed"
+----------------------------------
+Playbook1:
+
+[]cd /etc
+[]cd /ansible
+[]mkdir playbboks
+[]cd playbboks
+
+
+---
+- hosts: webserver
+  remote_user: root
+  become: yes
+  tasks:
+   - name: install httpd
+     yum: name=httpd state=installed
+   - name: copy index.html file
+     copy: src=index.html dest=/var/www/html
+   - name: start httpd
+     service: name=httpd state=started
+
+	 
+ 
+Commands:
+
+a)Check the syntax
+[] ansible-playbook playbook-name  --syntax
+b)Dry run
+[] ansible-playbook playbook-name  --check
+c)Executing playbook
+[] ansible-playbook playbook-name
+
+----------------------------------------
+
+2)Ansible variable:
+
+a)We can mention inside playbook:
+---
+- hosts: webserver
+  remote_user: root
+  become: yes
+  vars:
+   pkg: httpd
+  tasks:
+   - name: install httpd
+     yum: name={{pkg}} state=installed
+   - name: copy index.html file
+     copy: src=index.html dest=/var/www/html
+   - name: start httpd
+     service: name={{pkg}} state=started
+	 
+-----------------
+b)File method
+a)Playbook
+---
+- hosts: webserver
+  remote_user: root
+  become: yes
+  vars_files:
+   - abc.yml
+  tasks:
+   - name: install httpd
+     yum: name={{pkg}} state=installed
+   - name: copy index.html file 
+     copy: src=index.html dest=/var/www/html
+   - name: start httpd
+     service: name={{pkg}} state=started
+b)File:
+[]vi abc.yml
+pkg: httpd
+
+--------------------------------------
+C)Interactive Mode:
+---
+- hosts: webserver
+  remote_user: root
+  become: yes
+  vars_prompt:
+   - name: pkg
+     prompt: enter package name
+     private: no
+  tasks:
+   - name: install httpd
+     yum: name={{pkg}} state=installed
+   - name: copy index.html filew
+     copy: src=index.html dest=/var/www/html
+   - name: start httpd
+     service: name={{pkg}} state=started
+	 
+--------------------------------------
+3.Handlers
+
+Playbook:
+---
+- hosts: webserver
+  remote_user: root
+  become: yes
+  tasks:
+   - name: install httpd
+     yum: name=httpd state=installed
+   - name: copy index.html file
+     copy: src=index.html dest=/var/www/html
+     notify: restart httpd
+   - name: start httpd
+     service: name=httpd state=started
+  handlers:
+   - name: restart httpd
+     service: name=httpd state=restarted
+-----------------------------------------
+
+---
+- hosts: webserver
+  remote_user: root
+  become: yes
+  tasks:
+   - name: install httpd
+     yum: name=httpd state=installed
+   - name: copy index.htmll file
+     copy: src=index.htttpdd dest=/var/www/html
+     ignore_errors: yes
+   - name: start httpd
+     service: name=httpd state=started
+	 
+-------------------
+
+Template in Ansible is a file which contains all your configuration parameters but dynamic values.
+Ansible uses jinja2 template to enable dynnamic expression and access to varables.
+Template will substitute the value.
+
+
+
+a)[] vi template.yml
+---
+- hosts: webserver
+  remote_user: root
+  become: yes
+  tasks:
+   - name: copy xyz file
+     template: src=xyz.j2 dest=/root/xyz
+	 
+	 
+b)[] vi xyz.j2
+system name is {{ansible_nodename}}
+
+Template: Run the script, automatically varaible 
+
+------------------------------
+
+---
+- hosts: webserver
+  remote_user: root
+  become: yes
+  tasks:
+   - name: installing multiple packages
+     yum: name={{item}} state=installed
+     with_items:
+        - httpd
+        - curl
+        - wget
+--------------------------------
+
+
+---
+- hosts: webserver
+  remote_user: root
+  become: yes
+  tasks:
+   - name: install httpd
+     yum: name=httpd state=installed
+   - name: creates index.html file
+     copy: src=index.html dest=/var/www/html
+   - name: restart httpd
+     service: name=httpd state=started
+
+
+
+Commands:
+[]ansible-vault encrypt vault.yml
+[]ansible-vault edit vault.yml
+[]ansible-vault rekey vault.yml
+[]ansible-vault decrypt vault.yml
+
+
+
+-----------------------------
+
+---
+- hosts: webserver
+  remote_user: root
+  become: yes
+  tasks:
+   - name: install httpd
+     yum: name=httpd state=installed
+   - name: creates index.html file
+     copy: src=index.html dest=/var/www/html
+   - name: restart httpd
+     service: name=httpd state=started
+     register: output
+   - debug:
+       msg: "{{output}}"
+
+
+	   
+-----------------------------
+
+---
+- hosts: webserver
+  remote_user: root
+  become: yes
+  tasks:
+   - name: install httpd
+     yum: name=httpd state=installed
+     tags:
+      - install
+   - name: copy index.html file
+     copy: src=index.html dest=/var/www/html
+     tags:
+      - configure
+   - name: start httpd
+     service: name=httpd state=started
+     tags:
+      - service
+	  
+	
+	 
+Method1:
+[]ansible-playbook tags.yml --tag  "install,configure"
+[]ansible-playbook tags.yml --skip-tags "install,configure" 
+Method2:
+[]ansible-playbook tags.yml --start-at-task="creates index.html file"
+Method3:
+[]ansible-playbook tags.yml --step
+
+-------------------------------------------
+
+---
+- hosts: webserver
+  remote_user: root
+  become: yes
+  tasks:
+   - include: install.yml
+   - include: config.yml
+   - include: service.yml
+   
+--------------------------------
+
+
+---
+- hosts: webserver
+  remote_user: root
+  become: yes
+  tasks:
+   - name: install httpd
+     yum: name=httpd state=installed
+     when: ansible_os_family== "Redhat"
+   -
+    
+   - name: install apache2
+     apt: name=apache2 state=installed
+     when: ansible_os_family== "Debian"
+   - name: creates index.html file
+     copy: src=index.html dest=/var/www/html
+   - name: restart httpd
+     service: name=httpd state=started
+
+
+---------------------------------------------
+
+Role for Webserver:
+Playbook:
+---
+- hosts: webserver
+  remote_user: root
+  become: yes
+  roles:
+   - webserver
+   
+ 
+Commands:
+[]cd /etc/ansible/roles
+[]ansible-galaxy init rolename
+-->It will generate directory structure.
+a)[]cd rolename
+[]cd tasks
+[]vi main.yml
+---
+# tasks file for webserver
+- name: install httpd
+  yum: name=httpd state=present
+- name: creates index.html
+  copy: src=index.html dest=/var/www/html
+  notify: restart httpd
+- name: restart httpd
+  service: name=httpd state=started
+b)[]cd handlers
+[]vi main.yml
+---
+# handlers file for webserver
+- name: restart httpd
+  service: name=httpd state=restarted
+c)[]cd files
+[]vi index.html
+----------------------------------------
+Ansible setup module:
+-->Setup module will collect all the information about node like network information, platform information etc.
+[] anible targetmachineip -m setup
+
+---------------------------
+
+
+Ansible Forks:
+-->Ansible playbook can run in 5 target machines at a time. This is the default behaviour of ansible. If you want to run play book in 100 machines at a time you can achieve it by using the following.
+a)Adhoc level:
+[] ansible-playbook webserver.yml  --forks=10
+           (or)
+b)Global level:
+[] vi /etc/ansible/ansible.cfg
+forks=10
+
+-----------------------------
+
+To find the list of modules
+
+ansible-doc -l 
+
+---------------------------
+
+
+
+
+
+	 
+	 
+	
+
+	 
+
+
+
+
+
+
+
