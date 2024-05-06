@@ -1,0 +1,54 @@
+Sonar installation:
+1)Prerequisites:
+1)ubumtu-  AMI ID
+ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-20200908 (ami-0817d428a6fb68645)
+2)Medium instance
+---------------------------------------------
+1)Installing Java java
+[]sudo apt-get update
+[]sudo apt-get install openjdk-8-jdk
+[]java -version
+--------------------
+2)Installing sonar
+[]wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-5.6.7.zip
+[]sudo apt install unzip -y
+[]unzip sonarqube-5.6.7.zip
+-----------------------
+3)installing mysql
+[]sudo apt install mysql-server -y
+[]sudo systemctl start mysql
+-------------------
+4)Login to the database
+[]mysql -u root -p
+pwd: root
+
+mysql >  create database sonar;
+mysql > create user'sonar' identified by 'sonar';
+mysql >  grant all on sonar.* to 'sonar'@'%';
+mysql > grant all on sonar.* to 'sonar'@'localhost' identified by 'sonar';
+mysql > flush privileges;
+mysql > exit
+-----------------------------
+5)provide sonar user mane and password in sonar properties file.
+[]cd  sonarqube-5.6.7
+[]cd conf
+[]vi sonar.properties
+
+plesae make sure below changes shoud be done.
+
+sonar.jdbc.username=sonar
+sonar.jdbc.password=sonar
+sonar.jdbc.url=jdbc:mysql://localhost:3306/sonar?useUnicode=true&characterEncoding=utf8&rewriteBatchedStatements=true&useConfigs=maxPerformance
+
+------------------------------------
+
+6)start the sonar
+[]cd  sonarqube-5.6.7
+[]cd bin
+[]cd linux-x86-64
+[]./sonar.sh start
+
+---------------------------
+7)hit from the browser
+
+ip:9000

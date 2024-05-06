@@ -1,0 +1,16 @@
+    3  yum install java-1.8.0-openjdk-devel -y
+    4  wget https://sonatype-download.global.ssl.fastly.net/nexus/3/nexus-3.0.2-02-unix.tar.gz
+    5  ls -latr
+    6  tar -zxvf nexus-3.0.2-02-unix.tar.gz
+    7  ls -latr
+    8  chmod 777 nexus-3.0.2-02
+    9  ls -latr
+   10  cd nexus-3.0.2-02/
+   11  cd bin/
+   12  RUN_AS_USER=root ./nexus start
+
+publicip:8081\nexus
+
+username: admin
+password: admin123
+   
