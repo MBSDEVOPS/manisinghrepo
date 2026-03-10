@@ -1,0 +1,695 @@
+Installation:
+To install Terraform follow the below steps.
+
+Step1:
+Lunch ubuntu18.04 version
+
+Step2:
+Run the below commands
+
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+sudo apt-get update && sudo apt-get install terraform
+
+Step3:Check the version of the terraform
+
+terraform version
+
+
+Step4:
+Download secret key and access key from AWS Dashboard
+--------------------------------------------------------
+
+Step5:
+Creat a directory and go inside directory
+[]mkdir scripts
+[]cd scripts
+
+
+------------------------------------------
+Step6:
+
+What can you learn from this example?
+You can learn how to define plugins in configuration file.
+You can learn how to construct blocks with arguments and values.
+What is resource type and where can you find the resource types.
+
+#Script1:
+[]vi main.tf
+
+provider "aws" {
+    access_key = "xxxxx"
+    secret_key = "xxxxx"
+    region     = "ap-south-1"
+}
+
+resource "aws_instance" "sample_machine" {
+    ami = "ami-0567e0d2b4b2169ae"
+    instance_type = "t2.micro"
+}
+
+
+
+[]terraform init
+
+Follow the below commands 
+
+[]terraform validate
+[]terraform plan
+[]terraform apply
+[]terraform destroy
+
+
+-------------------------------------------
+Step7:
+What is state file ?
+Terraform keeps the remote state of the Infrastructure.
+You might have noticed, two file in terraform directory post after terraform apply. terraform.tfstate terraform.tfstate.backup
+When you run terraform apply, these files will be created and written by terraform.
+tfstate file is used to store the current state of infrastructure.
+tfstate.backup file is used to store the backup of previous state [N-1]
+This is how terraform keeps track of the remote state.
+To be precise using state file terraform helps to enable idempotance in your infrastructure.
+
+
+#Script2
+
+[]vi main.tf
+provider "aws" {
+    access_key = "xxxxxx"
+    secret_key = "xxxxxx"
+    region     = "ap-south-1"
+}
+
+resource "aws_instance" "ec2_instance" {
+    ami = "ami-0c1a7f89451184c8b"
+    instance_type = "t2.micro"
+    tags = {Name = "HTTPS SERVER"}
+}
+
+Note: After running the script check the statefile
+
+------------------------------------------------------
+Step8:
+What is the use of variables?
+variables can be kept in a separate file.
+variable files are used to keep your secrets [AWS credentials]
+Through this you can avoid updating AWS credentials in Git repo.
+Variables are also widely used to store the elements which keep changing
+Using variables makes the script reusable.
+Commonly used variable types in Terraform
+String
+Number
+List
+Map
+Set
+Set is also more similar to list.
+It helps to keep the list in order.
+Also remove duplicates in list
+Example : A list that has [5, 1, 1, 2] becomes [1, 2, 5] in set.
+
+#Script3
+
+Variables:
+
+[]vi main.tf
+resource "aws_instance" "ec2_instance" {
+    ami = "ami-id"
+    instance_type = var.machine_type
+}
+
+
+[]vi provider.tf
+provider "aws" {
+    access_key = var.AWS_ACCESSKEY
+    secret_key = var.AWS_SECRETKEY
+    region = var.AWS_REGION
+}
+
+[]vi variable.tf
+
+# # Access Key
+variable AWS_ACCESSKEY {
+  default     = "xxxxxx"
+}
+
+# Secret Key
+variable AWS_SECRETKEY {
+  default     = "xxxxx"
+}
+
+# Region
+variable AWS_REGION {
+  default     = "ap-south-1"
+}
+
+----------------------------------
+Step9:
+Description
+From this example we can understand how you can secure your credentials using AWS command line utility.
+To do this first we need to install apt  tool in your virtual machine.
+Follow the below steps to install aws cli
+Configure aws cli
+Install curl, unzip in your machine.
+apt install wget curl -y
+apt install unzip -y
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip file awscliv2.zip
+cd to aws folder post unzip and do install ./install
+run aws configure command which will prompt for asking access & secret key
+Enter your AWS credentials asked for in command line.
+Then you can see credentials are stored as environment variable under file ~/.aws/credentials
+Just do cat ~/.aws/credentials to view the file.
+
+#Script4:
+
+Configure AWS CLI
+
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+
+apt install unzip
+
+unzip awscliv2.zip
+cd aws
+./install
+aws configure
+
+Access Key:
+Secret Key:
+Region:ap-south-1
+Format:json
+
+
+cat ~/.aws/credentials
+
+[]vi main.tf
+resource "aws_instance" "ec2_instance" {
+    ami = "ami-052c08d70def0ac62"
+    instance_type = "t2.micro"
+}
+
+[]vi provider.tf
+provider "aws" {
+    region = var.AWS_REGION
+}
+
+[]vi vars.tf
+# Region
+variable AWS_REGION {
+  default     = "ap-south-1"
+}
+
+--------------------------------------
+Step10
+What are we doing with this code?
+Using this code we are creating security group in AWS cloud platform
+Create new EC2 instance attached with newly created security group and tags
+Using count argument to create more the one resource.
+Steps to execute this code?
+terraform init
+
+This command will initialize the terraform in that folder.
+Also initialize provider plugins, in our case it could download plugins which is relevant to AWS.
+You don’t need to run this command every time, unless if there is any change in config file.
+terraform validate
+
+To verify if your code does not have any syntax errors.
+terraform plan
+
+This command can help you to understand what actions will be performed when your trigger the terraform file.
+terraform apply
+
+This command will do actual implementation in your infrastructure.
+terraform destroy
+
+This command will destroy the infrastructure as described in your terraform file.
+Plugins used in this code
+Provider
+Resource
+
+#Script5
+AWS Resource Creation
+[]vi main.tf
+# Create new security group :
+resource "aws_security_group" "sandbox_sg" {
+    name = "sandbox security group"
+    vpc_id = var.vpc.id
+
+    ingress {
+        description = "inbound"
+        from_port = 22
+        to_port = 22
+        protocol = "tcp"
+        cidr_blocks = [var.vpc.cidr]
+    }
+
+    egress {
+        description = "outbound"
+        from_port = 0
+        to_port = 0
+        protocol = "tcp"
+        cidr_blocks = [var.vpc.cidr]
+    }
+    
+    tags = {
+        sg_name = "sandbox-security-group"
+    }
+
+}
+
+# Create EC2 instance
+resource "aws_instance" "ec2_instance" {
+    ami = "ami-052c08d70def0ac62"
+    instance_type = "t2.micro"
+    vpc_security_group_ids = [aws_security_group.sandbox_sg.id]
+    tags = {Name = "HTTP_SERVER"}
+    key_name = "wiculty1"
+    count = 2
+}
+
+
+[]vi provider.tf
+# Provider :
+provider "aws" {
+    region = var.AWS_REGION
+}
+
+[]vi vars.tf
+# Region
+variable AWS_REGION {
+  default     = "us-east-1"
+}
+
+# VPC 
+variable "vpc" {
+  default = {
+    id = "vpc-04e0ccdf0b9a311da"
+    cidr = "0.0.0.0/0"
+  }
+}
+
+-----------------------------------------
+Step11:
+What are we doing with this code?
+Using this code we are creating vpc & subnets in AWS cloud platform.
+Also attaching newly created subnets with EC2 instance.
+Steps to execute this code?
+terraform init
+
+This command will initialize the terraform in that folder.
+Also initialize provider plugins, in our case it could download plugins which is relevant to AWS.
+You don’t need to run this command every time, unless if there is any change in config file.
+terraform validate
+
+To verify if your code does not have any syntax errors.
+terraform plan
+
+This command can help you to understand what actions will be performed when your trigger the terraform file.
+terraform apply
+
+This command will do actual implementation in your infrastructure.
+terraform destroy
+
+This command will destroy the infrastructure as described in your terraform file.
+Plugins used in this code
+Provider
+Resource
+
+#Script6
+AWS Resource Creation
+[]vi main.tf
+# Create vpc :
+resource "aws_vpc" "myvpc" {
+  cidr_block = var.my_vpc.cidr
+  tags = {
+    Name = var.my_vpc.vpc_name
+  }
+}
+
+# Create dedicated Subnet for your vpc :
+resource "aws_subnet" "mysubnet" {
+  vpc_id                  = aws_vpc.myvpc.id
+  cidr_block              = var.my_vpc.subnet_cidr
+  map_public_ip_on_launch = "true"
+  availability_zone       = "us-east-1b"
+  tags = {
+    Name = var.my_vpc.subnet_name
+  }
+}
+
+# Create instance :
+resource "aws_instance" "myec2" {
+  ami = var.my_instance.myimage
+  instance_type = "t2.micro"
+  subnet_id = aws_subnet.mysubnet.id
+  tags = {
+    Name = var.my_instance.mytag
+  }
+}
+
+[]vi provider.tf
+
+provider "aws" {
+    region = var.AWS_REGION
+}
+
+[]vi vars.tf
+# Region
+variable AWS_REGION {
+  default     = "us-east-1"
+}
+
+# virtual private network
+variable my_vpc {
+  default = {
+    cidr = "172.32.0.0/16"
+    subnet_cidr = "172.32.0.0/24"
+    vpc_name = "practice_vpc"
+    subnet_name = "practice-subnet"
+  }
+}
+
+# Instance tags
+variable my_instance {
+  default = {
+    myimage = "ami-0022f774911c1d690"
+    mytag = "dev-instance"
+  }
+}
+
+----------------------------------------
+Step11:
+What are we doing with this code?
+Using this code we are creating ebs volume in AWS cloud platform.
+Also attaching newly created volume with EC2 instance.
+Steps to execute this code?
+terraform init
+
+This command will initialize the terraform in that folder.
+Also initialize provider plugins, in our case it could download plugins which is relevant to AWS.
+You don’t need to run this command every time, unless if there is any change in config file.
+terraform validate
+
+To verify if your code does not have any syntax errors.
+terraform plan
+
+This command can help you to understand what actions will be performed when your trigger the terraform file.
+terraform apply
+
+This command will do actual implementation in your infrastructure.
+terraform destroy
+
+This command will destroy the infrastructure as described in your terraform file.
+Plugins used in this code
+Provider
+Resource
+
+#Script7
+AWS Resource Creation
+[]vi main.tf
+# Create EBS volume
+resource "aws_ebs_volume" "storage_volume" {
+  availability_zone = "ap-south-1a"
+  size              = 1
+  tags = {
+    Name = var.instance_data.name
+  }
+}
+
+# Create new instance
+resource "aws_instance" "web" {
+  ami               = var.instance_data.ami
+  availability_zone = "ap-south-1a"
+  instance_type     = var.instance_data.type
+  tags = {
+    Name = var.instance_data.name
+  }
+}
+
+# Attach newly create EBS volume to instance
+resource "aws_volume_attachment" "ebs_att" {
+  device_name = var.instance_data.drive
+  volume_id   = aws_ebs_volume.storage_volume.id
+  instance_id = aws_instance.web.id
+}
+
+[]vi provider.tf
+provider "aws" {
+    region = var.AWS_REGION
+}
+
+[]vi vars.tf
+# Region
+variable AWS_REGION {
+  default     = "ap-south-1"
+}
+
+# Image
+variable instance_data {
+  default = {
+    ami = "ami-052c08d70def0ac62"
+    type = "t2.micro"
+    name = "ebs_server"
+    drive = "/dev/sde"
+  }
+}
+---------------------------------------------------------------
+Step12
+What is the use of output plugin ?
+Terraform keeps attributes of all the resources you create in form of state file.
+Those attributes can be queried with help of plugin called output.
+use this plugin?
+generate report with resource information.
+pass resource information to configuration management tools.
+get the resource informations without logging into console.
+
+What are we doing with this code?
+Using this code we are creating EC2 instance in AWS cloud platform.
+Additionally, we will be having new file called output.tf which hold all attribute output blocks.
+Post apply we should witness all the attributes defined in output.tf file should be printed in command line.
+Steps to execute this code?
+terraform init
+
+This command will initialize the terraform in that folder.
+Also initialize provider plugins, in our case it could download plugins which is relevant to AWS.
+You don’t need to run this command every time, unless if there is any change in config file.
+terraform validate
+
+To verify if your code does not have any syntax errors.
+terraform plan
+
+This command can help you to understand what actions will be performed when your trigger the terraform file.
+terraform apply
+
+This command will do actual implementation in your infrastructure.
+terraform output
+
+You can do terraform output any point in time even after apply which will print the results.
+terraform output >> file.txt
+
+You can extract the output to a file.
+terraform output public_ip
+
+You can also fetch outputs separately by calling the name.
+terraform output ip_address >> /etc/ansible/hosts
+
+: You can extract the IP address to ansible inventory file like this.
+terraform destroy
+
+This command will destroy the infrastructure as described in your terraform file.
+Plugins used in this code
+Provider
+Resource
+Output
+
+[]vi main.tf
+resource "aws_instance" "ec2_instance" {
+    ami = var.AMI
+    instance_type = "t2.micro"
+    tags = {Name = "CASSANDRA_SERVER"}
+}
+
+[]vi output.tf
+output "public_ip" {
+  value = aws_instance.ec2_instance.public_ip
+}
+
+output "instance_id" {
+  value = aws_instance.ec2_instance.id
+}
+
+output "cpu_core" {
+  value = aws_instance.ec2_instance.cpu_core_count
+}
+
+output "instance_type" {
+  value = aws_instance.ec2_instance.instance_type
+}
+
+output "volume_id" {
+  value = aws_instance.ec2_instance.root_block_device[0].volume_id
+}
+
+output "volume_size" {
+  value = aws_instance.ec2_instance.root_block_device[0].volume_size
+}
+
+output "volume_type" {
+  value = aws_instance.ec2_instance.root_block_device[0].volume_type
+}
+
+[]vi provider.tf
+provider "aws" {
+    region = var.AWS_REGION
+}
+
+
+[]vi vars.tf
+
+# Region
+variable AWS_REGION {
+  default = "ap-south-1"
+}
+
+# Image IDs
+variable "AMI" {
+  default = "ami-052c08d70def0ac62"
+}
+---------------------------
+Step13
+What are we doing with this code?
+Using this code we are creating multiple IAM user in AWS cloud platform.
+Using count with element and length funtion to create multiple resource
+Steps to execute this code?
+terraform init
+
+This command will initialize the terraform in that folder.
+Also initialize provider plugins, in our case it could download plugins which is relevant to AWS.
+You don’t need to run this command every time, unless if there is any change in config file.
+terraform validate
+
+To verify if your code does not have any syntax errors.
+terraform plan
+
+This command can help you to understand what actions will be performed when your trigger the terraform file.
+terraform apply
+
+This command will do actual implementation in your infrastructure.
+Plugins used in this code
+Provider
+Resource
+
+[]vi main.tf
+# Create new users :
+resource "aws_iam_user" "db_users" {
+    count = length(var.users)
+    name  = element(var.users, count.index)
+    #name =  var.users[count.index]
+}
+
+# Create new group :
+resource "aws_iam_group" "db_group" {
+    name = var.group
+}
+
+# Add users to group :
+resource "aws_iam_user_group_membership" "lb_add" {
+    count  = length(var.users)
+    user   = element(var.users, count.index)
+    groups = [aws_iam_group.db_group.name]
+}
+
+[]vi provider.tf
+provider "aws" {
+    region = var.AWS_REGION
+}
+
+[]vi vars.tf
+# Region
+variable AWS_REGION {
+  default     = "ap-south-1"
+}
+
+# Create users
+variable users {
+  default = ["db001", "db002", "db003", "db004", "db005"]
+}
+
+# Create groups 
+variable group {
+  default = "database-adminstrator"
+}
+
+--------------------------------------------
+
+Step14
+What are we doing with this code?
+Using this code we are creating multiple EC2 instance with different tag name in AWS cloud platform.
+Steps to execute this code?
+terraform init
+
+This command will initialize the terraform in that folder.
+Also initialize provider plugins, in our case it could download plugins which is relevant to AWS.
+You don’t need to run this command every time, unless if there is any change in config file.
+terraform validate
+
+To verify if your code does not have any syntax errors.
+terraform plan
+
+This command can help you to understand what actions will be performed when your trigger the terraform file.
+terraform apply
+
+This command will do actual implementation in your infrastructure.
+Plugins used in this code
+Provider
+Resource
+
+[]vi main.tf
+# Create instance:
+resource "aws_instance" "apache_instance" {
+  count         = var.instance_data.count
+  ami           = var.instance_data.ami
+  instance_type = var.instance_data.type
+  tags = {
+    Name  = element(var.instance_data.tag, count.index)
+  }
+}
+
+[]vi provider.tf
+provider "aws" {
+    region = var.AWS_REGION
+}
+
+vi []vars.tf
+# Region
+variable AWS_REGION {
+  default     = "ap-south-1"
+}
+
+# Image
+variable instance_data {
+  default = {
+    count = "3"
+    ami = "ami-052c08d70def0ac62"
+    type = "t2.micro"
+    tag = ["mysql", "promotheus", "splunk"]
+  }
+}
+
+----------------------------------------
+
+Installing pip on Linux (Ubuntu/Debian):
+
+sudo apt update
+
+sudo apt install python3 python3-pip
+
+python3 --version
+
+pip3 --version
+
+
+
+
+
+
