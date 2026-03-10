@@ -1,0 +1,137 @@
+#!/bin/bash
+
+# =========================
+# DevSetup CLI Tool
+# =========================
+
+COMMAND=$1
+
+show_help() {
+    echo "DevSetup CLI Tool"
+    echo ""
+    echo "Usage:"
+    echo "  devsetup install    Install DevOps tools"
+    echo "  devsetup validate   Check installed tools"
+    echo "  devsetup clean      Remove project directories"
+    echo "  devsetup --help     Show help"
+}
+
+install_tools() {
+
+echo "======================================"
+echo " Installing DevOps Environment"
+echo "======================================"
+
+sudo dnf update -y
+
+# Install Git
+if ! command -v git &> /dev/null
+then
+    echo "Installing Git..."
+    sudo dnf install git -y
+else
+    echo "Git already installed"
+fi
+
+# Install Docker
+if ! command -v docker &> /dev/null
+then
+    echo "Installing Docker..."
+    sudo dnf install docker -y
+    sudo systemctl start docker
+    sudo systemctl enable docker
+    sudo usermod -aG docker ec2-user
+else
+    echo "Docker already installed"
+fi
+
+# Install AWS CLI
+if ! command -v aws &> /dev/null
+then
+    echo "Installing AWS CLI..."
+    sudo dnf install awscli -y
+else
+    echo "AWS CLI already installed"
+fi
+
+# Install Terraform
+if ! command -v terraform &> /dev/null
+then
+    echo "Installing Terraform..."
+    sudo dnf install -y yum-utils
+    sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+    sudo dnf install terraform -y
+else
+    echo "Terraform already installed"
+fi
+
+# Install kubectl
+if ! command -v kubectl &> /dev/null
+then
+    echo "Installing kubectl..."
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    chmod +x kubectl
+    sudo mv kubectl /usr/local/bin/
+else
+    echo "kubectl already installed"
+fi
+
+# Create directories
+echo "Creating project directories..."
+mkdir -p ~/projects/dev
+mkdir -p ~/projects/test
+mkdir -p ~/projects/scripts
+
+echo "Installation Completed!"
+}
+
+validate_tools() {
+
+echo "======================================"
+echo " Validating Installed Tools"
+echo "======================================"
+
+git --version
+docker --version
+aws --version
+terraform version
+kubectl version --client
+
+echo "Validation Completed!"
+
+}
+
+clean_environment() {
+
+echo "Removing project directories..."
+
+rm -rf ~/projects
+
+echo "Environment cleaned."
+
+}
+
+case $COMMAND in
+
+install)
+    install_tools
+    ;;
+
+validate)
+    validate_tools
+    ;;
+
+clean)
+    clean_environment
+    ;;
+
+--help)
+    show_help
+    ;;
+
+*)
+    show_help
+    ;;
+
+esac
+
