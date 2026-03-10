@@ -34,4 +34,23 @@ DevSetup is a custom-built DevOps automation CLI tool that provisions a complete
 ## 💻 CLI Commands
 
 ### Install Environment
+---
+
+## 🎯 Purpose
+
+This project demonstrates practical DevOps skills including:
+
+- Cloud environment provisioning
+- Automation scripting
+- CLI tool development
+- Infrastructure tooling setup
+
+---
+
+## 👨‍💻 Author
+
+**Mani Singh**  
+Aspiring Cloud & DevOps Engineer
+
+GitHub: https://github.com/MBSDEVOPS
 
