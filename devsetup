@@ -1,17 +1,44 @@
 #!/bin/bash
 
-############################
-# DevSetup CLI Tool v1.0.0
-############################
+# ===============================
+# DevSetup Self Installer
+# ===============================
+
+INSTALL_PATH="/usr/local/bin/devsetup"
+
+if [[ "$0" == "bash" || "$0" == "sh" ]]; then
+    echo "[DevSetup] Installing globally..."
+
+    TMP_FILE="/tmp/devsetup"
+
+    curl -fsSL https://raw.githubusercontent.com/MBSDEVOPS/manisinghrepo/main/devsetup -o "$TMP_FILE"
+
+    sudo mv "$TMP_FILE" "$INSTALL_PATH"
+    sudo chmod +x "$INSTALL_PATH"
+
+    echo ""
+    echo "✅ DevSetup installed successfully!"
+    echo "Run: devsetup --help"
+    echo ""
+    exit 0
+fi
+
+# ===============================
+# CONFIG
+# ===============================
 
 VERSION="1.0.0"
-
-CONFIG_DIR="$HOME/.devsetup"
-LOG_DIR="$CONFIG_DIR/logs"
-CONFIG_FILE="$CONFIG_DIR/config.yaml"
+LOG_DIR="$HOME/.devsetup/logs"
 LOG_FILE="$LOG_DIR/devsetup.log"
+CONFIG_DIR="$HOME/.devsetup"
 
-################ COLORS ################
+mkdir -p "$LOG_DIR"
+mkdir -p "$CONFIG_DIR"
+
+# ===============================
+# COLORS
+# ===============================
+
 GREEN="\e[32m"
 YELLOW="\e[33m"
 RED="\e[31m"
@@ -19,7 +46,10 @@ BLUE="\e[34m"
 CYAN="\e[36m"
 RESET="\e[0m"
 
-################ BANNER ################
+# ===============================
+# BANNER (YOUR ORIGINAL STYLE)
+# ===============================
+
 banner() {
 echo -e "$BLUE"
 cat << "EOF"
@@ -32,13 +62,15 @@ cat << "EOF"
 ╚═════╝ ╚══════╝  ╚═══╝  ╚══════╝╚══════╝   ╚═╝    ╚═════╝ ╚═╝
 
 EOF
-echo -e "$RESET"
-echo -e "${CYAN}DevSetup CLI Tool v$VERSION${RESET}"
-echo -e "${YELLOW}DevOps Environment Automation${RESET}"
+echo -e "$CYAN DevSetup CLI Tool v$VERSION $RESET"
+echo -e "$YELLOW DevOps Environment Automation $RESET"
 echo ""
 }
 
-################ SPINNER ################
+# ===============================
+# SPINNER
+# ===============================
+
 spinner() {
 pid=$!
 spin='-\|/'
@@ -51,150 +83,148 @@ done
 printf "\r"
 }
 
-################ LOG ################
 log() {
-mkdir -p "$LOG_DIR"
 echo "$(date) : $1" >> "$LOG_FILE"
 }
 
-################ CONFIG ################
-create_config() {
-mkdir -p "$CONFIG_DIR"
-touch "$CONFIG_FILE"
+# ===============================
+# DIRECTORY PROVISIONING
+# ===============================
+
+setup_dirs() {
+mkdir -p ~/projects/dev ~/projects/test ~/projects/scripts
+log "Directories created"
 }
 
-################ DEPENDENCIES ################
-install_dependencies() {
+# ===============================
+# INSTALL FUNCTIONS (IDEMPOTENT)
+# ===============================
 
-command -v curl >/dev/null || sudo dnf install -y curl || sudo apt-get install -y curl
-command -v unzip >/dev/null || sudo dnf install -y unzip || sudo apt-get install -y unzip
-command -v python3 >/dev/null || sudo dnf install -y python3 || sudo apt-get install -y python3
-command -v pip3 >/dev/null || sudo dnf install -y python3-pip || sudo apt-get install -y python3-pip
-
-}
-
-################ IDP INSTALL CHECK ################
 install_if_missing() {
 CMD=$1
 INSTALL_CMD=$2
+NAME=$3
 
-if command -v $CMD >/dev/null; then
-echo -e "${GREEN}[✔] $CMD already installed${RESET}"
+if command -v $CMD &>/dev/null; then
+echo -e "${GREEN}[✔] $NAME already installed${RESET}"
 else
-echo -e "${CYAN}Installing $CMD...${RESET}"
+echo -e "${CYAN}Installing $NAME...${RESET}"
 (eval "$INSTALL_CMD") & spinner
-echo -e "${GREEN}[✔] $CMD installed${RESET}"
-log "$CMD installed"
+echo -e "${GREEN}[✔] $NAME installed${RESET}"
 fi
 }
 
-################ TOOL INSTALL ################
 install_tools() {
 
-shift
+echo -e "${CYAN}Starting DevOps environment setup...${RESET}"
+setup_dirs
 
-if [[ "$#" -eq 0 || "$1" == "--interactive" ]]; then
-echo "Install Docker? (y/n)"
-read d
-echo "Install Terraform? (y/n)"
-read t
-echo "Install AWS CLI? (y/n)"
-read a
-echo "Install kubectl? (y/n)"
-read k
-echo "Install Node.js? (y/n)"
-read n
-echo "Install Ansible? (y/n)"
-read an
-else
+sudo dnf update -y & spinner
+
 for arg in "$@"; do
 case $arg in
-docker) d="y" ;;
-terraform) t="y" ;;
-aws) a="y" ;;
-kubectl) k="y" ;;
-node) n="y" ;;
-ansible) an="y" ;;
+docker)
+install_if_missing docker "sudo dnf install docker -y && sudo systemctl enable --now docker" Docker
+;;
+aws)
+install_if_missing aws "sudo dnf install awscli -y" "AWS CLI"
+;;
+terraform)
+install_if_missing terraform "sudo dnf install -y yum-utils && sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo && sudo dnf install terraform -y" Terraform
+;;
+kubectl)
+install_if_missing kubectl "curl -LO https://dl.k8s.io/release/\$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/" kubectl
+;;
+node)
+install_if_missing node "sudo dnf install nodejs -y" Node.js
+;;
+ansible)
+install_if_missing ansible "sudo dnf install ansible -y" Ansible
+;;
+docker-compose)
+install_if_missing docker-compose "sudo dnf install docker-compose-plugin -y" Docker-Compose
+;;
 esac
 done
-fi
 
-[[ "$d" == "y" ]] && install_if_missing docker "sudo dnf install -y docker || sudo apt install -y docker.io"
-[[ "$t" == "y" ]] && install_if_missing terraform "sudo dnf install -y terraform"
-[[ "$a" == "y" ]] && install_if_missing aws "sudo dnf install -y awscli"
-[[ "$k" == "y" ]] && install_if_missing kubectl "sudo dnf install -y kubectl"
-[[ "$n" == "y" ]] && install_if_missing node "sudo dnf module install nodejs -y || sudo apt install -y nodejs"
-[[ "$an" == "y" ]] && install_if_missing ansible "pip3 install ansible"
-
-mkdir -p ~/projects/dev ~/projects/test ~/projects/scripts
-echo -e "${GREEN}[✔] Directories provisioned${RESET}"
-
+echo -e "${GREEN}Installation Completed!${RESET}"
 }
 
-################ VALIDATE ################
-validate_tools() {
-echo -e "${CYAN}Validating tools...${RESET}"
-for tool in docker aws terraform kubectl node ansible; do
-if command -v $tool >/dev/null; then
-echo -e "${GREEN}$tool installed${RESET}"
+# ===============================
+# DOCTOR COMMAND
+# ===============================
+
+doctor() {
+echo -e "${CYAN}System Diagnostics${RESET}"
+
+for cmd in docker aws terraform kubectl node ansible docker-compose; do
+if command -v $cmd &>/dev/null; then
+echo -e "${GREEN}[✔] $cmd installed${RESET}"
 else
-echo -e "${YELLOW}$tool NOT installed${RESET}"
+echo -e "${YELLOW}[⚠] $cmd missing${RESET}"
 fi
 done
 }
 
-################ CLEANUP ################
+# ===============================
+# CLEANUP
+# ===============================
+
 cleanup() {
 rm -rf ~/projects
-echo -e "${GREEN}Environment cleaned${RESET}"
+echo -e "${RED}Environment cleaned${RESET}"
 }
 
-################ DOCTOR ################
-doctor() {
-echo "System Diagnostics"
-uname -a
-df -h
-free -m
-}
+# ===============================
+# AUTO UPDATE
+# ===============================
 
-################ AUTO UPDATE ################
 update_devsetup() {
 echo "Updating DevSetup..."
-sudo curl -fsSL https://raw.githubusercontent.com/MBSDEVOPS/manisinghrepo/main/devsetup -o /usr/local/bin/devsetup
-sudo chmod +x /usr/local/bin/devsetup
-echo -e "${GREEN}Updated successfully${RESET}"
+curl -fsSL https://raw.githubusercontent.com/MBSDEVOPS/manisinghrepo/main/devsetup | sudo bash
 }
 
-################ HELP ################
+# ===============================
+# HELP
+# ===============================
+
 help_menu() {
-echo "Usage:"
-echo " devsetup install [docker terraform aws kubectl node ansible]"
-echo " devsetup install --interactive"
-echo " devsetup validate"
-echo " devsetup cleanup"
-echo " devsetup doctor"
-echo " devsetup update"
-echo " devsetup --help"
-echo " devsetup --version"
+banner
+cat <<EOF
+Usage:
+  devsetup <command> [options]
+
+Commands:
+  install <tools>     Install tools
+  doctor              Diagnose environment
+  cleanup             Remove created directories
+  update              Update DevSetup
+  --help              Show help
+  --version           Show version
+
+Examples:
+  devsetup install docker terraform
+  devsetup install docker aws kubectl
+EOF
 }
 
-################ MAIN ################
-create_config
-install_dependencies
-banner
+# ===============================
+# MAIN
+# ===============================
 
 case "$1" in
 install)
+shift
+banner
 install_tools "$@"
 ;;
-validate)
-validate_tools
+doctor)
+banner
+doctor
 ;;
 cleanup)
+banner
 cleanup
-;;
-doctor)
-doctor
 ;;
 update)
 update_devsetup
