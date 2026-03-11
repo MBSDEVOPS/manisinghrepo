@@ -1,296 +1,266 @@
 #!/bin/bash
 
-# =====================================
+############################################
 # DevSetup CLI Tool v1.0.0
-# =====================================
+# Author: Mani Singh
+############################################
 
-VERSION="v1.0.0"
+VERSION="1.0.0"
+
+################ COLORS ################
+GREEN="\e[32m"
+YELLOW="\e[33m"
+RED="\e[31m"
+BLUE="\e[34m"
+NC="\e[0m"
+
+################ PATHS ################
 BASE_DIR="$HOME/.devsetup"
 LOG_DIR="$BASE_DIR/logs"
+CONFIG_FILE="$BASE_DIR/config.yaml"
 LOG_FILE="$LOG_DIR/devsetup.log"
 
 mkdir -p "$LOG_DIR"
 
-# =====================================
-# COLORS
-# =====================================
-GREEN="\033[0;32m"
-YELLOW="\033[1;33m"
-RED="\033[0;31m"
-BLUE="\033[0;34m"
-NC="\033[0m"
+################ LOG ################
+log() {
+    echo -e "$1"
+    echo "$(date) : $1" >> "$LOG_FILE"
+}
 
-success(){ echo -e "${GREEN}[✔] $1${NC}" | tee -a "$LOG_FILE"; }
-warning(){ echo -e "${YELLOW}[⚠] $1${NC}" | tee -a "$LOG_FILE"; }
-error(){ echo -e "${RED}[✖] $1${NC}" | tee -a "$LOG_FILE"; }
-info(){ echo -e "${BLUE}[➜] $1${NC}" | tee -a "$LOG_FILE"; }
+################ SPINNER ################
+spinner() {
+    local pid=$!
+    local spin='-\|/'
+    local i=0
+    while kill -0 $pid 2>/dev/null; do
+        i=$(( (i+1) %4 ))
+        printf "\r${YELLOW}[%c] Working...${NC}" "${spin:$i:1}"
+        sleep .1
+    done
+    printf "\r"
+}
 
-# =====================================
-# STARTUP BANNER
-# =====================================
-show_banner() {
+################ BANNER ################
+banner() {
 echo -e "${BLUE}"
-echo "██████╗ ███████╗██╗   ██╗███████╗███████╗████████╗██╗   ██╗██████╗ "
-echo "██╔══██╗██╔════╝██║   ██║██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗"
-echo "██║  ██║█████╗  ██║   ██║███████╗█████╗     ██║   ██║   ██║██████╔╝"
-echo "██║  ██║██╔══╝  ╚██╗ ██╔╝╚════██║██╔══╝     ██║   ██║   ██║██╔═══╝ "
-echo "██████╔╝███████╗ ╚████╔╝ ███████║███████╗   ██║   ╚██████╔╝██║     "
-echo "╚═════╝ ╚══════╝  ╚═══╝  ╚══════╝╚══════╝   ╚═╝    ╚═════╝ ╚═╝     "
-echo ""
-echo -e "        DevSetup CLI Tool ${VERSION}"
-echo -e "        DevOps Environment Automation"
+echo "========================================="
+echo "        DevSetup CLI Tool v$VERSION"
+echo "     DevOps Environment Automation"
+echo "========================================="
 echo -e "${NC}"
 }
 
-# =====================================
-# SPINNER
-# =====================================
-spinner(){
-    local pid=$!
-    local delay=0.1
-    local spin='|/-\'
-    while ps -p $pid >/dev/null 2>&1; do
-        printf " [%c]  " "$spin"
-        spin=${spin#?}${spin%"${spin#?}"}
-        sleep $delay
-        printf "\b\b\b\b\b\b"
-    done
-    printf "    \b\b\b\b"
-}
-
-# =====================================
-# SELF INSTALL (curl | bash)
-# =====================================
-if [[ "$0" == "bash" ]] || [[ "$0" == "-bash" ]]; then
-    echo "Installing DevSetup globally..."
-    curl -fsSL https://raw.githubusercontent.com/MBSDEVOPS/manisinghrepo/main/devsetup -o /tmp/devsetup
-    sudo mv /tmp/devsetup /usr/local/bin/devsetup
-    sudo chmod +x /usr/local/bin/devsetup
-    echo "Installed! Run: devsetup --help"
-    exit 0
-fi
-
-# =====================================
-# OS DETECTION
-# =====================================
-if command -v apt-get &>/dev/null; then
-    PKG_INSTALL="sudo apt-get install -y"
-    PKG_UPDATE="sudo apt-get update -y"
-elif command -v dnf &>/dev/null; then
-    PKG_INSTALL="sudo dnf install -y"
-    PKG_UPDATE="sudo dnf update -y"
-else
-    error "Unsupported OS"
-    exit 1
-fi
-
-already_installed(){ command -v "$1" &>/dev/null; }
-
-# =====================================
-# DIRECTORY PROVISIONING
-# =====================================
-setup_directories(){
-    info "Creating DevOps workspace..."
-    mkdir -p ~/projects/dev ~/projects/test ~/projects/scripts
-    success "Directories ready"
-}
-
-# =====================================
-# DEPENDENCIES
-# =====================================
-install_dep(){
-    if ! already_installed "$1"; then
-        info "Installing dependency: $1"
-        ($PKG_INSTALL "$2" >>"$LOG_FILE" 2>&1) & spinner
-        success "$1 installed"
-    fi
-}
-
-check_dependencies(){
-    install_dep curl curl
-    install_dep unzip unzip
-    install_dep python3 python3
-}
-
-# =====================================
-# TOOL INSTALLERS (IDEMPOTENT)
-# =====================================
-install_docker(){
-already_installed docker && success "Docker already installed" || {
-info "Installing Docker..."
-($PKG_INSTALL docker >>"$LOG_FILE" 2>&1) & spinner
-sudo systemctl enable docker >/dev/null 2>&1
-sudo systemctl start docker
-success "Docker installed"
-}
-}
-
-install_aws(){
-already_installed aws && success "AWS CLI already installed" || {
-info "Installing AWS CLI..."
-($PKG_INSTALL awscli >>"$LOG_FILE" 2>&1) & spinner
-success "AWS CLI installed"
-}
-}
-
-install_terraform(){
-already_installed terraform && success "Terraform already installed" || {
-info "Installing Terraform..."
-sudo dnf install -y yum-utils >/dev/null 2>&1
-sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo >/dev/null 2>&1
-($PKG_INSTALL terraform >>"$LOG_FILE" 2>&1) & spinner
-success "Terraform installed"
-}
-}
-
-install_kubectl(){
-already_installed kubectl && success "kubectl already installed" || {
-info "Installing kubectl..."
-(curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" >>"$LOG_FILE" 2>&1) & spinner
-chmod +x kubectl
-sudo mv kubectl /usr/local/bin/
-success "kubectl installed"
-}
-}
-
-install_ansible(){
-already_installed ansible && success "Ansible already installed" || {
-info "Installing Ansible..."
-($PKG_INSTALL ansible >>"$LOG_FILE" 2>&1) & spinner
-success "Ansible installed"
-}
-}
-
-install_node(){
-already_installed node && success "Node.js already installed" || {
-info "Installing Node.js..."
-($PKG_INSTALL nodejs >>"$LOG_FILE" 2>&1) & spinner
-success "Node.js installed"
-}
-}
-
-# =====================================
-# INTERACTIVE INSTALL
-# =====================================
-interactive_install(){
-read -p "Install Docker? (y/n): " x; [[ $x == y ]] && install_docker
-read -p "Install AWS CLI? (y/n): " x; [[ $x == y ]] && install_aws
-read -p "Install Terraform? (y/n): " x; [[ $x == y ]] && install_terraform
-read -p "Install kubectl? (y/n): " x; [[ $x == y ]] && install_kubectl
-read -p "Install Ansible? (y/n): " x; [[ $x == y ]] && install_ansible
-read -p "Install Node.js? (y/n): " x; [[ $x == y ]] && install_node
-}
-
-# =====================================
-# VALIDATE
-# =====================================
-validate_tools(){
-info "Validating installed tools..."
-docker --version 2>/dev/null || warning "Docker NOT installed"
-aws --version 2>/dev/null || warning "AWS CLI NOT installed"
-terraform version 2>/dev/null || warning "Terraform NOT installed"
-kubectl version --client 2>/dev/null || warning "kubectl NOT installed"
-node -v 2>/dev/null || warning "Node.js NOT installed"
-ansible --version 2>/dev/null || warning "Ansible NOT installed"
-success "Validation completed"
-}
-
-# =====================================
-# DOCTOR
-# =====================================
-doctor_check(){
-info "Running system diagnostics..."
-
-[[ -f /etc/os-release ]] && success "OS detected"
-
-ping -c 1 google.com &>/dev/null \
-&& success "Internet OK" \
-|| warning "No internet"
-
-success "Disk: $(df -h / | awk 'NR==2 {print $5}')"
-success "Memory: $(free -h | awk '/Mem:/ {print $3 "/" $2}')"
-
-command -v docker &>/dev/null && success "Docker installed" || warning "Docker missing"
-command -v kubectl &>/dev/null && success "kubectl installed" || warning "kubectl missing"
-command -v terraform &>/dev/null && success "Terraform installed" || warning "Terraform missing"
-command -v aws &>/dev/null && success "AWS CLI installed" || warning "AWS CLI missing"
-
-success "Doctor check completed"
-}
-
-# =====================================
-# CLEANUP
-# =====================================
-cleanup_env(){
-info "Cleaning DevSetup environment..."
-rm -rf "$BASE_DIR" ~/projects
-success "Cleanup completed"
-}
-
-# =====================================
-# HELP
-# =====================================
-show_help(){
+################ HELP ################
+help_menu() {
+banner
 cat <<EOF
-
-DevSetup CLI Tool $VERSION
+Usage:
+  devsetup <command> [options]
 
 Commands:
-  install
-  validate
-  doctor
-  cleanup
+  install [tools]     Install tools
+  validate            Check installed tools
+  cleanup             Remove DevSetup temp files
+  update              Update DevSetup CLI
+  --help              Show help
+  --version           Show version
 
-Options:
-  --interactive
-  --help
-  --version
-
+Examples:
+  devsetup install docker terraform
+  devsetup install --interactive
 EOF
 }
 
-# =====================================
-# INSTALL FLOW
-# =====================================
-install_command(){
-
-info "Starting DevOps setup..."
-
-check_dependencies
-
-info "Updating OS packages..."
-($PKG_UPDATE >>"$LOG_FILE" 2>&1) & spinner
-success "OS updated"
-
-setup_directories
-
-$INTERACTIVE && interactive_install
-
-success "Installation Completed!"
+################ CONFIG ################
+create_config() {
+if [ ! -f "$CONFIG_FILE" ]; then
+cat <<EOF > "$CONFIG_FILE"
+default_tools:
+  - docker
+  - terraform
+EOF
+fi
 }
 
-# =====================================
-# ROUTER
-# =====================================
-COMMAND=$1
+load_config() {
+grep "-" "$CONFIG_FILE" | awk '{print $2}'
+}
+
+################ DEP CHECK ################
+install_dependencies() {
+
+log "${GREEN}[✔] Checking dependencies...${NC}"
+
+command -v curl >/dev/null || sudo yum install -y curl >/dev/null 2>&1 &
+spinner
+
+command -v unzip >/dev/null || sudo yum install -y unzip >/dev/null 2>&1 &
+spinner
+}
+
+################ INSTALLERS ################
+
+install_docker() {
+if command -v docker >/dev/null; then
+log "${GREEN}[✔] Docker already installed${NC}"
+return
+fi
+
+log "${BLUE}Installing Docker...${NC}"
+sudo yum install -y docker >/dev/null 2>&1 &
+spinner
+
+sudo systemctl enable docker
+sudo systemctl start docker
+
+log "${GREEN}[✔] Docker Installed${NC}"
+}
+
+install_aws() {
+command -v aws && { log "${GREEN}[✔] AWS CLI already installed${NC}"; return; }
+
+curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o aws.zip
+unzip -q aws.zip
+sudo ./aws/install >/dev/null 2>&1
+
+log "${GREEN}[✔] AWS CLI Installed${NC}"
+}
+
+install_terraform() {
+command -v terraform && { log "${GREEN}[✔] Terraform already installed${NC}"; return; }
+
+sudo yum install -y yum-utils >/dev/null 2>&1
+sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+sudo yum install -y terraform >/dev/null 2>&1
+
+log "${GREEN}[✔] Terraform Installed${NC}"
+}
+
+install_kubectl() {
+command -v kubectl && { log "${GREEN}[✔] kubectl already installed${NC}"; return; }
+
+curl -LO https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+
+log "${GREEN}[✔] kubectl Installed${NC}"
+}
+
+install_node() {
+command -v node && { log "${GREEN}[✔] Node already installed${NC}"; return; }
+
+curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+sudo yum install -y nodejs >/dev/null 2>&1
+
+log "${GREEN}[✔] Node.js Installed${NC}"
+}
+
+install_ansible() {
+command -v ansible && { log "${GREEN}[✔] Ansible already installed${NC}"; return; }
+
+sudo yum install -y ansible >/dev/null 2>&1
+
+log "${GREEN}[✔] Ansible Installed${NC}"
+}
+
+################ INSTALL LOGIC ################
+install_tools() {
+
 shift
 
-for arg in "$@"; do
-case $arg in
---interactive) INTERACTIVE=true ;;
---help) show_help; exit ;;
---version) echo "DevSetup CLI Tool $VERSION"; exit ;;
+if [ "$1" == "--interactive" ]; then
+read -p "Install Docker? (y/n): " d
+[ "$d" = "y" ] && install_docker
+
+read -p "Install Terraform? (y/n): " t
+[ "$t" = "y" ] && install_terraform
+
+read -p "Install AWS CLI? (y/n): " a
+[ "$a" = "y" ] && install_aws
+return
+fi
+
+if [ "$1" == "default" ]; then
+TOOLS=$(load_config)
+else
+TOOLS="$@"
+fi
+
+for tool in $TOOLS; do
+case $tool in
+docker) install_docker ;;
+aws) install_aws ;;
+terraform) install_terraform ;;
+kubectl) install_kubectl ;;
+node) install_node ;;
+ansible) install_ansible ;;
+*) log "${RED}Unknown tool: $tool${NC}" ;;
 esac
 done
 
-show_banner
+log "${GREEN}[✔] Installation Completed${NC}"
+}
 
-case "$COMMAND" in
-install) install_command ;;
-validate) validate_tools ;;
-doctor) doctor_check ;;
-cleanup) cleanup_env ;;
-""|--help) show_help ;;
-*) error "Unknown command. Use devsetup --help" ;;
+################ VALIDATE ################
+validate_tools() {
+banner
+log "${BLUE}Checking installed tools...${NC}"
+
+docker --version 2>/dev/null || log "${YELLOW}Docker not installed${NC}"
+aws --version 2>/dev/null || log "${YELLOW}AWS CLI not installed${NC}"
+terraform -version 2>/dev/null || log "${YELLOW}Terraform not installed${NC}"
+kubectl version --client 2>/dev/null || log "${YELLOW}kubectl not installed${NC}"
+node -v 2>/dev/null || log "${YELLOW}Node not installed${NC}"
+ansible --version 2>/dev/null || log "${YELLOW}Ansible not installed${NC}"
+}
+
+################ CLEANUP ################
+cleanup() {
+rm -rf "$BASE_DIR/tmp"
+log "${GREEN}[✔] Cleanup completed${NC}"
+}
+
+################ UPDATE ################
+update_devsetup() {
+
+log "${BLUE}Updating DevSetup...${NC}"
+
+sudo curl -fsSL \
+https://raw.githubusercontent.com/MBSDEVOPS/manisinghrepo/main/devsetup \
+-o /usr/local/bin/devsetup
+
+sudo chmod +x /usr/local/bin/devsetup
+
+log "${GREEN}[✔] DevSetup Updated Successfully${NC}"
+}
+
+################ MAIN ################
+create_config
+install_dependencies
+
+case "$1" in
+install)
+banner
+install_tools "$@"
+;;
+validate)
+validate_tools
+;;
+cleanup)
+cleanup
+;;
+update)
+update_devsetup
+;;
+--help|"")
+help_menu
+;;
+--version)
+echo "DevSetup CLI Tool v$VERSION"
+;;
+*)
+echo "Unknown command"
+help_menu
+;;
 esac
-        
