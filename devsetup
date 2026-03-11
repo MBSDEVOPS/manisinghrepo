@@ -14,7 +14,7 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 show_help() {
-    echo -e "DevSetup CLI Tool v2.0.0"
+    echo -e "DevSetup CLI Tool v1.0.0"
     echo ""
     echo "Usage:"
     echo "  devsetup <command> [options]"
