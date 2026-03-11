@@ -10,6 +10,9 @@
 Welcome to my DevOps repository showcasing cloud automation, DevOps tools, and real-world hands-on projects focused on modern cloud infrastructure and automation practices.
 
 ---
+## 🎬 Demo
+
+[![asciicast](https://asciinema.org/a/J6sfAaLdDcAIFJbC.svg)](https://asciinema.org/a/J6sfAaLdDcAIFJbC)
 
 ## ⭐ Featured Project: DevSetup CLI Tool v1.0
 
