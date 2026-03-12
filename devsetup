@@ -47,7 +47,7 @@ CYAN="\e[36m"
 RESET="\e[0m"
 
 # ===============================
-# BANNER
+# BANNER (YOUR ORIGINAL STYLE)
 # ===============================
 
 banner() {
@@ -97,7 +97,7 @@ log "Directories created"
 }
 
 # ===============================
-# INSTALL FUNCTIONS
+# INSTALL FUNCTIONS (IDEMPOTENT)
 # ===============================
 
 install_if_missing() {
@@ -113,41 +113,6 @@ echo -e "${CYAN}Installing $NAME...${RESET}"
 echo -e "${GREEN}[✔] $NAME installed${RESET}"
 fi
 }
-
-# ===============================
-# INTERACTIVE INSTALL (NEW)
-# ===============================
-
-interactive_install() {
-
-TOOLS=()
-
-ask_install () {
-read -p "Install $1? (y/n): " choice
-if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
-TOOLS+=("$2")
-fi
-}
-
-echo ""
-echo "Interactive DevSetup Installation"
-echo "--------------------------------"
-
-ask_install "Docker" docker
-ask_install "AWS CLI" aws
-ask_install "Terraform" terraform
-ask_install "kubectl" kubectl
-ask_install "Node.js" node
-ask_install "Ansible" ansible
-ask_install "Docker Compose" docker-compose
-
-echo ""
-install_tools "${TOOLS[@]}"
-}
-
-# ===============================
-# INSTALL TOOLS
-# ===============================
 
 install_tools() {
 
@@ -186,37 +151,38 @@ echo -e "${GREEN}Installation Completed!${RESET}"
 }
 
 # ===============================
-# ✅ NEW INTERACTIVE MODE (ONLY ADDITION)
+# INTERACTIVE MODE
 # ===============================
 
-interactive_install() {
+interactive_mode() {
+    banner
+    echo -e "${CYAN}Welcome to Interactive DevSetup Mode!${RESET}"
+    echo "Select the tools you want to install (y/n):"
 
-echo -e "${CYAN}Interactive Installation Mode${RESET}"
+    declare -A tools
+    tools=( ["docker"]="Docker" ["aws"]="AWS CLI" ["terraform"]="Terraform" ["kubectl"]="kubectl" ["node"]="Node.js" ["ansible"]="Ansible" ["docker-compose"]="Docker-Compose" )
 
-read -p "Install Docker? (y/n): " d
-[[ $d == y ]] && install_tools docker
+    selected_tools=()
+    for key in "${!tools[@]}"; do
+        read -rp "${tools[$key]}? [y/n]: " choice
+        case "$choice" in
+            y|Y) selected_tools+=("$key") ;;
+            n|N) ;;
+            *) echo "Skipping ${tools[$key]}" ;;
+        esac
+    done
 
-read -p "Install AWS CLI? (y/n): " a
-[[ $a == y ]] && install_tools aws
+    if [ ${#selected_tools[@]} -eq 0 ]; then
+        echo -e "${YELLOW}No tools selected. Exiting interactive mode.${RESET}"
+        exit 0
+    fi
 
-read -p "Install Terraform? (y/n): " t
-[[ $t == y ]] && install_tools terraform
-
-read -p "Install kubectl? (y/n): " k
-[[ $k == y ]] && install_tools kubectl
-
-read -p "Install Node.js? (y/n): " n
-[[ $n == y ]] && install_tools node
-
-read -p "Install Ansible? (y/n): " an
-[[ $an == y ]] && install_tools ansible
-
-read -p "Install Docker Compose? (y/n): " dc
-[[ $dc == y ]] && install_tools docker-compose
+    echo -e "${CYAN}Installing selected tools...${RESET}"
+    install_tools "${selected_tools[@]}"
 }
 
 # ===============================
-# DOCTOR
+# DOCTOR COMMAND
 # ===============================
 
 doctor() {
@@ -241,7 +207,7 @@ echo -e "${RED}Environment cleaned${RESET}"
 }
 
 # ===============================
-# UPDATE
+# AUTO UPDATE
 # ===============================
 
 update_devsetup() {
@@ -261,16 +227,16 @@ Usage:
 
 Commands:
   install <tools>     Install tools
-<<<<<<< HEAD
-  install --interactive Interactive installer
-=======
-  install --interactive  Interactive install mode
->>>>>>> 6dbd24b (Interactive mode added)
+  --interactive, -i   Run interactive mode
   doctor              Diagnose environment
   cleanup             Remove created directories
   update              Update DevSetup
   --help              Show help
   --version           Show version
+
+Examples:
+  devsetup install docker terraform
+  devsetup install docker aws kubectl
 EOF
 }
 
@@ -282,19 +248,7 @@ case "$1" in
 install)
 shift
 banner
-<<<<<<< HEAD
-
-if [[ "$1" == "--interactive" ]]; then
-    interactive_install
-else
-    install_tools "$@"
-=======
-if [[ "$1" == "--interactive" ]]; then
-interactive_install
-else
 install_tools "$@"
->>>>>>> 6dbd24b (Interactive mode added)
-fi
 ;;
 doctor)
 banner
@@ -306,6 +260,9 @@ cleanup
 ;;
 update)
 update_devsetup
+;;
+--interactive|-i)
+interactive_mode
 ;;
 --help|"")
 help_menu
