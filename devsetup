@@ -47,7 +47,7 @@ CYAN="\e[36m"
 RESET="\e[0m"
 
 # ===============================
-# BANNER (YOUR ORIGINAL STYLE)
+# BANNER
 # ===============================
 
 banner() {
@@ -97,7 +97,7 @@ log "Directories created"
 }
 
 # ===============================
-# INSTALL FUNCTIONS (IDEMPOTENT)
+# INSTALL FUNCTIONS
 # ===============================
 
 install_if_missing() {
@@ -151,7 +151,37 @@ echo -e "${GREEN}Installation Completed!${RESET}"
 }
 
 # ===============================
-# DOCTOR COMMAND
+# ✅ NEW INTERACTIVE MODE (ONLY ADDITION)
+# ===============================
+
+interactive_install() {
+
+echo -e "${CYAN}Interactive Installation Mode${RESET}"
+
+read -p "Install Docker? (y/n): " d
+[[ $d == y ]] && install_tools docker
+
+read -p "Install AWS CLI? (y/n): " a
+[[ $a == y ]] && install_tools aws
+
+read -p "Install Terraform? (y/n): " t
+[[ $t == y ]] && install_tools terraform
+
+read -p "Install kubectl? (y/n): " k
+[[ $k == y ]] && install_tools kubectl
+
+read -p "Install Node.js? (y/n): " n
+[[ $n == y ]] && install_tools node
+
+read -p "Install Ansible? (y/n): " an
+[[ $an == y ]] && install_tools ansible
+
+read -p "Install Docker Compose? (y/n): " dc
+[[ $dc == y ]] && install_tools docker-compose
+}
+
+# ===============================
+# DOCTOR
 # ===============================
 
 doctor() {
@@ -176,7 +206,7 @@ echo -e "${RED}Environment cleaned${RESET}"
 }
 
 # ===============================
-# AUTO UPDATE
+# UPDATE
 # ===============================
 
 update_devsetup() {
@@ -196,15 +226,12 @@ Usage:
 
 Commands:
   install <tools>     Install tools
+  install --interactive Interactive installer
   doctor              Diagnose environment
   cleanup             Remove created directories
   update              Update DevSetup
   --help              Show help
   --version           Show version
-
-Examples:
-  devsetup install docker terraform
-  devsetup install docker aws kubectl
 EOF
 }
 
@@ -216,7 +243,12 @@ case "$1" in
 install)
 shift
 banner
-install_tools "$@"
+
+if [[ "$1" == "--interactive" ]]; then
+    interactive_install
+else
+    install_tools "$@"
+fi
 ;;
 doctor)
 banner
