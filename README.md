@@ -22,6 +22,7 @@ It simplifies DevOps onboarding by allowing developers and engineers to quickly 
 
 ---
 
+<<<<<<< HEAD
 # ⚡ Quick Installation (One Command)
 
 Install DevSetup globally on any Linux machine:
@@ -33,6 +34,59 @@ After installation:
 
 devsetup --help
 🎯 Project Purpose
+=======
+## ⭐ Featured Project: DevSetup CLI Tool v1.0
+
+**DevSetup** is a modular, CLI-based DevOps automation tool that provisions a complete development environment on AWS EC2 (or local Linux system) with a single command.  
+It supports optional installs, interactive menus, environment validation, and cleanup functionality — making setup fast, flexible, and beginner-friendly.
+
+---
+
+## 🛠 Tech Stack
+
+- Cloud & Infra: AWS, EC2  
+- DevOps Tools: Docker, Docker Compose, Terraform, kubectl, Node.js, Ansible  
+- Platform: Linux  
+- Version Control: Git  
+
+---
+
+## ⚙️ Features
+
+- One-click DevOps environment setup  
+- Interactive menu to select which tools to install (`Docker`, `AWS CLI`, `Terraform`, `kubectl`, `Ansible`, `Node.js`, `Docker Compose`)  
+- Optional Kubernetes cluster setup  
+- Environment validation commands  
+- Cleanup functionality to remove project directories  
+- Auto-install dependencies like Python, pip, curl, unzip if missing  
+- Logging for troubleshooting: `$HOME/.devsetup/logs/devsetup.log`  
+- Modular CLI architecture  
+- Auto-detect existing tool versions and upgrade only if outdated  
+- Version info (`--version`)  
+- Optional telemetry (local only)  
+
+---
+
+## 💻 CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `devsetup install` | Install selected DevOps tools |
+| `devsetup install --interactive` | Interactive menu to choose tools |
+| `devsetup validate` | Validate installed tools and show versions |
+| `devsetup clean` | Remove DevSetup temporary directories |
+| `devsetup --help` | Show usage and available commands |
+| `devsetup --version` | Show DevSetup CLI version |
+
+**Optional flags for install command:**  
+`--docker --aws --terraform --kubectl --node --ansible --docker-compose --k8s-cluster --all --skip-update`
+
+**Example:**  
+
+```bash
+devsetup install --interactive
+🎯 Purpose
+>>>>>>> 25d615c (Overwrite README with DevSetup CLI v1.0 clean content)
 
 This project demonstrates real DevOps engineering practices:
 
