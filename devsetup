@@ -114,6 +114,41 @@ echo -e "${GREEN}[✔] $NAME installed${RESET}"
 fi
 }
 
+# ===============================
+# INTERACTIVE INSTALL (NEW)
+# ===============================
+
+interactive_install() {
+
+TOOLS=()
+
+ask_install () {
+read -p "Install $1? (y/n): " choice
+if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
+TOOLS+=("$2")
+fi
+}
+
+echo ""
+echo "Interactive DevSetup Installation"
+echo "--------------------------------"
+
+ask_install "Docker" docker
+ask_install "AWS CLI" aws
+ask_install "Terraform" terraform
+ask_install "kubectl" kubectl
+ask_install "Node.js" node
+ask_install "Ansible" ansible
+ask_install "Docker Compose" docker-compose
+
+echo ""
+install_tools "${TOOLS[@]}"
+}
+
+# ===============================
+# INSTALL TOOLS
+# ===============================
+
 install_tools() {
 
 echo -e "${CYAN}Starting DevOps environment setup...${RESET}"
@@ -226,7 +261,11 @@ Usage:
 
 Commands:
   install <tools>     Install tools
+<<<<<<< HEAD
   install --interactive Interactive installer
+=======
+  install --interactive  Interactive install mode
+>>>>>>> 6dbd24b (Interactive mode added)
   doctor              Diagnose environment
   cleanup             Remove created directories
   update              Update DevSetup
@@ -243,11 +282,18 @@ case "$1" in
 install)
 shift
 banner
+<<<<<<< HEAD
 
 if [[ "$1" == "--interactive" ]]; then
     interactive_install
 else
     install_tools "$@"
+=======
+if [[ "$1" == "--interactive" ]]; then
+interactive_install
+else
+install_tools "$@"
+>>>>>>> 6dbd24b (Interactive mode added)
 fi
 ;;
 doctor)
