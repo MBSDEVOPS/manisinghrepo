@@ -22,7 +22,7 @@ It simplifies DevOps onboarding by allowing developers and engineers to quickly 
 
 ---
 
-<<<<<<< HEAD
+
 # ⚡ Quick Installation (One Command)
 
 Install DevSetup globally on any Linux machine:
