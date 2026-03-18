@@ -1,3 +1,13 @@
+<p align="center">
+
+<img src="https://img.shields.io/github/stars/MBSDEVOPS/manisinghrepo?style=for-the-badge" />
+<img src="https://img.shields.io/github/forks/MBSDEVOPS/manisinghrepo?style=for-the-badge" />
+<img src="https://img.shields.io/github/license/MBSDEVOPS/manisinghrepo?style=for-the-badge" />
+<img src="https://img.shields.io/github/v/release/MBSDEVOPS/manisinghrepo?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Platform-Linux-blue?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Shell-Bash-green?style=for-the-badge" />
+
+</p>
 # 🚀 DevOps Projects – Mani Singh
 
 Welcome to my DevOps repository showcasing cloud automation, DevOps tools, and real-world hands-on projects focused on modern cloud infrastructure and automation practices.
