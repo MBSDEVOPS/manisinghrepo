@@ -47,7 +47,7 @@ CYAN="\e[36m"
 RESET="\e[0m"
 
 # ===============================
-# BANNER (YOUR ORIGINAL STYLE)
+# BANNER
 # ===============================
 
 banner() {
@@ -97,7 +97,7 @@ log "Directories created"
 }
 
 # ===============================
-# INSTALL FUNCTIONS (IDEMPOTENT)
+# INSTALL FUNCTIONS
 # ===============================
 
 install_if_missing() {
@@ -155,34 +155,31 @@ echo -e "${GREEN}Installation Completed!${RESET}"
 # ===============================
 
 interactive_mode() {
-    banner
-    echo -e "${CYAN}Welcome to Interactive DevSetup Mode!${RESET}"
-    echo "Select the tools you want to install (y/n):"
+banner
+echo -e "${CYAN}Welcome to Interactive DevSetup Mode!${RESET}"
 
-    declare -A tools
-    tools=( ["docker"]="Docker" ["aws"]="AWS CLI" ["terraform"]="Terraform" ["kubectl"]="kubectl" ["node"]="Node.js" ["ansible"]="Ansible" ["docker-compose"]="Docker-Compose" )
+declare -A tools
+tools=( ["docker"]="Docker" ["aws"]="AWS CLI" ["terraform"]="Terraform" ["kubectl"]="kubectl" ["node"]="Node.js" ["ansible"]="Ansible" ["docker-compose"]="Docker-Compose" )
 
-    selected_tools=()
-    for key in "${!tools[@]}"; do
-        read -rp "${tools[$key]}? [y/n]: " choice
-        case "$choice" in
-            y|Y) selected_tools+=("$key") ;;
-            n|N) ;;
-            *) echo "Skipping ${tools[$key]}" ;;
-        esac
-    done
+selected_tools=()
 
-    if [ ${#selected_tools[@]} -eq 0 ]; then
-        echo -e "${YELLOW}No tools selected. Exiting interactive mode.${RESET}"
-        exit 0
-    fi
+for key in "${!tools[@]}"; do
+read -rp "${tools[$key]}? [y/n]: " choice
+case "$choice" in
+y|Y) selected_tools+=("$key");;
+esac
+done
 
-    echo -e "${CYAN}Installing selected tools...${RESET}"
-    install_tools "${selected_tools[@]}"
+if [ ${#selected_tools[@]} -eq 0 ]; then
+echo -e "${YELLOW}No tools selected.${RESET}"
+exit 0
+fi
+
+install_tools "${selected_tools[@]}"
 }
 
 # ===============================
-# DOCTOR COMMAND
+# DOCTOR
 # ===============================
 
 doctor() {
@@ -207,11 +204,28 @@ echo -e "${RED}Environment cleaned${RESET}"
 }
 
 # ===============================
-# AUTO UPDATE
+# AUTO UPDATE (SMART VERSION CHECK)
 # ===============================
 
 update_devsetup() {
+
+echo "Checking for updates..."
+
+LATEST_VERSION=$(curl -s https://raw.githubusercontent.com/MBSDEVOPS/manisinghrepo/main/VERSION)
+
+if [[ -z "$LATEST_VERSION" ]]; then
+echo "❌ Unable to check latest version."
+exit 1
+fi
+
+if [[ "$LATEST_VERSION" == "$VERSION" ]]; then
+echo "✅ DevSetup already at latest version ($VERSION)"
+exit 0
+fi
+
+echo "🚀 New version available: $LATEST_VERSION"
 echo "Updating DevSetup..."
+
 curl -fsSL https://raw.githubusercontent.com/MBSDEVOPS/manisinghrepo/main/devsetup | sudo bash
 }
 
@@ -226,17 +240,13 @@ Usage:
   devsetup <command> [options]
 
 Commands:
-  install <tools>     Install tools
-  --interactive, -i   Run interactive mode
-  doctor              Diagnose environment
-  cleanup             Remove created directories
-  update              Update DevSetup
-  --help              Show help
-  --version           Show version
-
-Examples:
-  devsetup install docker terraform
-  devsetup install docker aws kubectl
+  install <tools>
+  --interactive, -i
+  doctor
+  cleanup
+  update
+  --help
+  --version
 EOF
 }
 
