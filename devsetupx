@@ -1,0 +1,244 @@
+#!/bin/bash
+
+# ===================================
+# DevSetupX Intelligent CLI
+# Version: 1.0.1
+# ===================================
+
+INSTALL_PATH="/usr/local/bin/devsetupx"
+REPO_URL="https://raw.githubusercontent.com/MBSDEVOPS/manisinghrepo/main"
+
+# ===================================
+# GLOBAL INSTALL (ONE COMMAND)
+# ===================================
+
+if [[ "$0" == "bash" || "$0" == "sh" ]]; then
+    echo "[DevSetupX] Installing globally..."
+
+    TMP_FILE="/tmp/devsetupx"
+    curl -fsSL $REPO_URL/devsetupx -o "$TMP_FILE"
+
+    sudo mv "$TMP_FILE" "$INSTALL_PATH"
+    sudo chmod +x "$INSTALL_PATH"
+
+    echo "✅ DevSetupX installed!"
+    echo "Run: devsetupx --help"
+    exit 0
+fi
+
+# ===================================
+# CONFIG
+# ===================================
+
+VERSION="1.0.1"
+CONFIG_DIR="$HOME/.devsetupx"
+LOG_DIR="$CONFIG_DIR/logs"
+LOG_FILE="$LOG_DIR/devsetupx.log"
+
+mkdir -p "$LOG_DIR"
+
+# ===================================
+# COLORS
+# ===================================
+
+GREEN="\e[32m"
+YELLOW="\e[33m"
+RED="\e[31m"
+BLUE="\e[34m"
+CYAN="\e[36m"
+RESET="\e[0m"
+
+# ===================================
+# BANNER (FIXED — NOT CUT)
+# ===================================
+
+banner() {
+clear
+echo -e "$BLUE"
+cat <<'EOF'
+██████╗ ███████╗██╗   ██╗███████╗███████╗████████╗██╗   ██╗██████╗ ██╗  ██╗
+██╔══██╗██╔════╝██║   ██║██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗╚██╗██╔╝
+██║  ██║█████╗  ██║   ██║███████╗█████╗     ██║   ██║   ██║██████╔╝ ╚███╔╝
+██║  ██║██╔══╝  ╚██╗ ██╔╝╚════██║██╔══╝     ██║   ██║   ██║██╔═══╝  ██╔██╗
+██████╔╝███████╗ ╚████╔╝ ███████║███████╗   ██║   ╚██████╔╝██║     ██╔╝ ██╗
+╚═════╝ ╚══════╝  ╚═══╝  ╚══════╝╚══════╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝  ╚═╝
+EOF
+echo -e "$CYAN DevSetupX Intelligent CLI v$VERSION $RESET"
+echo ""
+}
+
+# ===================================
+# DETECTION ENGINE (NEW FEATURES)
+# ===================================
+
+detect_os() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        OS=$ID
+    else
+        OS=$(uname -s)
+    fi
+    echo -e "${GREEN}OS:${RESET} $OS"
+}
+
+detect_architecture() {
+    ARCH=$(uname -m)
+    case $ARCH in
+        x86_64) ARCH="amd64" ;;
+        aarch64|arm64) ARCH="arm64" ;;
+    esac
+    echo -e "${GREEN}Architecture:${RESET} $ARCH"
+}
+
+detect_cloud() {
+    CLOUD="Local Machine"
+
+    curl -s --connect-timeout 1 http://169.254.169.254/latest/meta-data/ &>/dev/null && CLOUD="AWS"
+    curl -s --connect-timeout 1 -H Metadata:true "http://169.254.169.254/metadata/instance" &>/dev/null && CLOUD="Azure"
+
+    echo -e "${GREEN}Cloud:${RESET} $CLOUD"
+}
+
+detect_container() {
+    if grep -qa docker /proc/1/cgroup; then
+        ENV="Docker Container"
+    else
+        ENV="VM / Bare Metal"
+    fi
+    echo -e "${GREEN}Environment:${RESET} $ENV"
+}
+
+doctor() {
+    banner
+    echo -e "${CYAN}System Diagnostics${RESET}"
+    detect_os
+    detect_architecture
+    detect_cloud
+    detect_container
+
+    for cmd in docker aws terraform kubectl node ansible; do
+        command -v $cmd &>/dev/null \
+        && echo -e "${GREEN}[✔] $cmd installed${RESET}" \
+        || echo -e "${YELLOW}[⚠] $cmd missing${RESET}"
+    done
+}
+
+# ===================================
+# INSTALL ENGINE (OLD FEATURES KEPT)
+# ===================================
+
+install_if_missing() {
+CMD=$1
+INSTALL_CMD=$2
+NAME=$3
+
+if command -v $CMD &>/dev/null; then
+    echo -e "${GREEN}[✔] $NAME already installed${RESET}"
+else
+    echo -e "${CYAN}Installing $NAME...${RESET}"
+    eval "$INSTALL_CMD"
+fi
+}
+
+install_tools() {
+
+sudo dnf update -y
+
+for arg in "$@"; do
+case $arg in
+docker)
+install_if_missing docker "sudo dnf install docker -y && sudo systemctl enable --now docker" Docker ;;
+aws)
+install_if_missing aws "sudo dnf install awscli -y" "AWS CLI" ;;
+terraform)
+install_if_missing terraform "sudo dnf install terraform -y" Terraform ;;
+kubectl)
+install_if_missing kubectl "sudo dnf install kubectl -y" kubectl ;;
+node)
+install_if_missing node "sudo dnf install nodejs -y" Node ;;
+ansible)
+install_if_missing ansible "sudo dnf install ansible -y" Ansible ;;
+esac
+done
+
+echo -e "${GREEN}Installation Completed${RESET}"
+}
+
+# ===================================
+# INTERACTIVE MODE (FIXED)
+# ===================================
+
+interactive_mode() {
+banner
+echo "Select tools (y/n)"
+
+TOOLS=(docker aws terraform kubectl node ansible)
+SELECTED=()
+
+for t in "${TOOLS[@]}"; do
+read -rp "$t ? [y/n]: " ans
+[[ "$ans" =~ ^[Yy]$ ]] && SELECTED+=("$t")
+done
+
+install_tools "${SELECTED[@]}"
+}
+
+# ===================================
+# SMART AUTO UPDATE (FIXED 404)
+# ===================================
+
+update_devsetupx() {
+
+LATEST=$(curl -s $REPO_URL/VERSION)
+
+if [[ "$LATEST" == "$VERSION" ]]; then
+    echo "✅ Already latest version ($VERSION)"
+    exit 0
+fi
+
+echo "Updating DevSetupX → $LATEST"
+curl -fsSL $REPO_URL/devsetupx | sudo bash
+}
+
+# ===================================
+# HELP
+# ===================================
+
+help_menu() {
+banner
+cat <<EOF
+Usage:
+  devsetupx install <tools>
+  devsetupx --interactive | -i
+  devsetupx doctor
+  devsetupx update
+  devsetupx --version
+EOF
+}
+
+# ===================================
+# MAIN
+# ===================================
+
+case "$1" in
+install)
+shift
+banner
+install_tools "$@"
+;;
+doctor)
+doctor
+;;
+update)
+update_devsetupx
+;;
+--interactive|-i|interactive)
+interactive_mode
+;;
+--version)
+echo "DevSetupX v$VERSION"
+;;
+*)
+help_menu
+;;
+esac
