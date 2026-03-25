@@ -1,476 +1,265 @@
-#!/bin/bash
-
-<<<<<<< HEAD
-# ===================================
-# DevSetupX Intelligent CLI
+#!/usr/bin/env bash
+#
+# DevSetupX — Enterprise DevOps Bootstrap CLI
 # Version: 1.0.1
-# ===================================
+#
 
-INSTALL_PATH="/usr/local/bin/devsetupx"
+########################################
+# VERSION
+########################################
+VERSION="1.0.1"
 REPO_URL="https://raw.githubusercontent.com/MBSDEVOPS/manisinghrepo/main"
 
-# ===================================
-# GLOBAL INSTALL (ONE COMMAND)
-# ===================================
-
-if [[ "$0" == "bash" || "$0" == "sh" ]]; then
-    echo "[DevSetupX] Installing globally..."
-
-    TMP_FILE="/tmp/devsetupx"
-    curl -fsSL $REPO_URL/devsetupx -o "$TMP_FILE"
-
-    sudo mv "$TMP_FILE" "$INSTALL_PATH"
-    sudo chmod +x "$INSTALL_PATH"
-
-    echo "✅ DevSetupX installed!"
-    echo "Run: devsetupx --help"
-    exit 0
-fi
-
-# ===================================
-# CONFIG
-# ===================================
-
-VERSION="1.0.1"
-CONFIG_DIR="$HOME/.devsetupx"
-LOG_DIR="$CONFIG_DIR/logs"
-LOG_FILE="$LOG_DIR/devsetupx.log"
-
-mkdir -p "$LOG_DIR"
-
-# ===================================
+########################################
 # COLORS
-# ===================================
+########################################
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[1;33m"
+BLUE="\033[0;34m"
+CYAN="\033[0;36m"
+NC="\033[0m"
 
-GREEN="\e[32m"
-YELLOW="\e[33m"
-RED="\e[31m"
-BLUE="\e[34m"
-CYAN="\e[36m"
-RESET="\e[0m"
+########################################
+# LOGGING
+########################################
+LOG_FILE="$HOME/.devsetupx.log"
 
-# ===================================
-# BANNER (FIXED — NOT CUT)
-# ===================================
+log(){ echo -e "$1" | tee -a "$LOG_FILE"; }
+info(){ log "${BLUE}[INFO]${NC} $1"; }
+ok(){ log "${GREEN}[OK]${NC} $1"; }
+warn(){ log "${YELLOW}[WARN]${NC} $1"; }
+err(){ log "${RED}[ERROR]${NC} $1"; }
 
+########################################
+# BANNER (FIXED WIDTH — NOT CUT)
+########################################
 banner() {
-clear
-echo -e "$BLUE"
+echo -e "${CYAN}"
 cat <<'EOF'
-=======
-# ==========================================================
-# DevSetupX v1.0.1 — Enterprise DevOps Bootstrap CLI
-# FINAL RELEASE (Feature Frozen)
-# ==========================================================
+██████╗ ███████╗██╗   ██╗███████╗███████╗████████╗██╗   ██╗██╗  ██╗
+██╔══██╗██╔════╝██║   ██║██╔════╝██╔════╝╚══██╔══╝██║   ██║╚██╗██╔╝
+██║  ██║█████╗  ██║   ██║███████╗█████╗     ██║   ██║   ██║ ╚███╔╝
+██║  ██║██╔══╝  ╚██╗ ██╔╝╚════██║██╔══╝     ██║   ██║   ██║ ██╔██╗
+██████╔╝███████╗ ╚████╔╝ ███████║███████╗   ██║   ╚██████╔╝██╔╝ ██╗
+╚═════╝ ╚══════╝  ╚═══╝  ╚══════╝╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝
 
-VERSION="1.0.1"
-INSTALL_PATH="/usr/local/bin/devsetupx"
-REPO_RAW="https://raw.githubusercontent.com/MBSDEVOPS/manisinghrepo/main"
-
-CONFIG_DIR="$HOME/.devsetupx"
-PLUGIN_DIR="$CONFIG_DIR/plugins"
-LOG_FILE="$CONFIG_DIR/devsetupx.log"
-
-mkdir -p "$PLUGIN_DIR"
-
-# ---------------- COLORS ----------------
-GREEN="\e[32m"
-RED="\e[31m"
-YELLOW="\e[33m"
-CYAN="\e[36m"
-BLUE="\e[34m"
-RESET="\e[0m"
-
-log(){ echo "$(date) : $1" >> "$LOG_FILE"; }
-
-# ---------------- BANNER ----------------
-banner(){
-echo -e "$BLUE"
-cat << "EOF"
->>>>>>> 197d573 (Add DevSetupX v1.0.1 enterprise CLI with cloud detection and improvements)
-██████╗ ███████╗██╗   ██╗███████╗███████╗████████╗██╗   ██╗██████╗ ██╗  ██╗
-██╔══██╗██╔════╝██║   ██║██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗╚██╗██╔╝
-██║  ██║█████╗  ██║   ██║███████╗█████╗     ██║   ██║   ██║██████╔╝ ╚███╔╝
-██║  ██║██╔══╝  ╚██╗ ██╔╝╚════██║██╔══╝     ██║   ██║   ██║██╔═══╝  ██╔██╗
-██████╔╝███████╗ ╚████╔╝ ███████║███████╗   ██║   ╚██████╔╝██║     ██╔╝ ██╗
-╚═════╝ ╚══════╝  ╚═══╝  ╚══════╝╚══════╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝  ╚═╝
+        DevSetupX v1.0.1 — Enterprise DevOps CLI
 EOF
-<<<<<<< HEAD
-echo -e "$CYAN DevSetupX Intelligent CLI v$VERSION $RESET"
-echo ""
+echo -e "${NC}"
 }
 
-# ===================================
-# DETECTION ENGINE (NEW FEATURES)
-# ===================================
-
+########################################
+# DETECTION ENGINE
+########################################
 detect_os() {
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        OS=$ID
-    else
-        OS=$(uname -s)
-    fi
-    echo -e "${GREEN}OS:${RESET} $OS"
-}
-
-detect_architecture() {
-    ARCH=$(uname -m)
-    case $ARCH in
-        x86_64) ARCH="amd64" ;;
-        aarch64|arm64) ARCH="arm64" ;;
-    esac
-    echo -e "${GREEN}Architecture:${RESET} $ARCH"
-}
-
-detect_cloud() {
-    CLOUD="Local Machine"
-
-    curl -s --connect-timeout 1 http://169.254.169.254/latest/meta-data/ &>/dev/null && CLOUD="AWS"
-    curl -s --connect-timeout 1 -H Metadata:true "http://169.254.169.254/metadata/instance" &>/dev/null && CLOUD="Azure"
-
-    echo -e "${GREEN}Cloud:${RESET} $CLOUD"
-}
-
-detect_container() {
-    if grep -qa docker /proc/1/cgroup; then
-        ENV="Docker Container"
-    else
-        ENV="VM / Bare Metal"
-    fi
-    echo -e "${GREEN}Environment:${RESET} $ENV"
-}
-
-doctor() {
-    banner
-    echo -e "${CYAN}System Diagnostics${RESET}"
-    detect_os
-    detect_architecture
-    detect_cloud
-    detect_container
-
-    for cmd in docker aws terraform kubectl node ansible; do
-        command -v $cmd &>/dev/null \
-        && echo -e "${GREEN}[✔] $cmd installed${RESET}" \
-        || echo -e "${YELLOW}[⚠] $cmd missing${RESET}"
-    done
-}
-
-# ===================================
-# INSTALL ENGINE (OLD FEATURES KEPT)
-# ===================================
-
-install_if_missing() {
-CMD=$1
-INSTALL_CMD=$2
-NAME=$3
-
-if command -v $CMD &>/dev/null; then
-    echo -e "${GREEN}[✔] $NAME already installed${RESET}"
-else
-    echo -e "${CYAN}Installing $NAME...${RESET}"
-    eval "$INSTALL_CMD"
-fi
-}
-
-install_tools() {
-
-sudo dnf update -y
-
-for arg in "$@"; do
-case $arg in
-docker)
-install_if_missing docker "sudo dnf install docker -y && sudo systemctl enable --now docker" Docker ;;
-aws)
-install_if_missing aws "sudo dnf install awscli -y" "AWS CLI" ;;
-terraform)
-install_if_missing terraform "sudo dnf install terraform -y" Terraform ;;
-kubectl)
-install_if_missing kubectl "sudo dnf install kubectl -y" kubectl ;;
-node)
-install_if_missing node "sudo dnf install nodejs -y" Node ;;
-ansible)
-install_if_missing ansible "sudo dnf install ansible -y" Ansible ;;
+OS=$(uname -s)
+case "$OS" in
+ Linux*) OS="Linux" ;;
+ Darwin*) OS="macOS" ;;
+ *) OS="Unknown" ;;
 esac
-done
-
-echo -e "${GREEN}Installation Completed${RESET}"
 }
 
-# ===================================
-# INTERACTIVE MODE (FIXED)
-# ===================================
-
-interactive_mode() {
-banner
-echo "Select tools (y/n)"
-
-TOOLS=(docker aws terraform kubectl node ansible)
-SELECTED=()
-
-for t in "${TOOLS[@]}"; do
-read -rp "$t ? [y/n]: " ans
-[[ "$ans" =~ ^[Yy]$ ]] && SELECTED+=("$t")
-done
-
-install_tools "${SELECTED[@]}"
-}
-
-# ===================================
-# SMART AUTO UPDATE (FIXED 404)
-# ===================================
-
-update_devsetupx() {
-
-LATEST=$(curl -s $REPO_URL/VERSION)
-
-if [[ "$LATEST" == "$VERSION" ]]; then
-    echo "✅ Already latest version ($VERSION)"
-    exit 0
-fi
-
-echo "Updating DevSetupX → $LATEST"
-curl -fsSL $REPO_URL/devsetupx | sudo bash
-}
-
-# ===================================
-# HELP
-# ===================================
-
-help_menu() {
-banner
-cat <<EOF
-Usage:
-  devsetupx install <tools>
-  devsetupx --interactive | -i
-  devsetupx doctor
-  devsetupx update
-  devsetupx --version
-EOF
-}
-
-# ===================================
-# MAIN
-# ===================================
-
-case "$1" in
-install)
-shift
-banner
-install_tools "$@"
-;;
-doctor)
-doctor
-;;
-update)
-update_devsetupx
-;;
---interactive|-i|interactive)
-interactive_mode
-;;
---version)
-echo "DevSetupX v$VERSION"
-;;
-*)
-help_menu
-;;
-=======
-echo -e "${CYAN}DevSetupX Enterprise CLI v$VERSION${RESET}"
-echo ""
-}
-
-# ---------------- DETECTIONS ----------------
-
-detect_os(){
-source /etc/os-release 2>/dev/null
-OS=$ID
-}
-
-detect_architecture(){
+detect_arch() {
 ARCH=$(uname -m)
-case $ARCH in
-x86_64) ARCH="amd64" ;;
-aarch64|arm64) ARCH="arm64" ;;
+case "$ARCH" in
+ x86_64) ARCH="amd64" ;;
+ aarch64|arm64) ARCH="arm64" ;;
 esac
 }
 
-detect_pkg_manager(){
-if command -v apt &>/dev/null; then PKG="apt"
-elif command -v dnf &>/dev/null; then PKG="dnf"
-elif command -v yum &>/dev/null; then PKG="yum"
+detect_pkg_manager() {
+if command -v apt >/dev/null; then PKG="apt"
+elif command -v yum >/dev/null; then PKG="yum"
+elif command -v dnf >/dev/null; then PKG="dnf"
+elif command -v brew >/dev/null; then PKG="brew"
 else PKG="unknown"
 fi
 }
 
-detect_cloud(){
-if curl -s --connect-timeout 1 http://169.254.169.254/latest/meta-data/ &>/dev/null; then
- CLOUD="AWS"
-elif curl -s -H Metadata:true --connect-timeout 1 \
- http://169.254.169.254/metadata/instance &>/dev/null; then
- CLOUD="AZURE"
-elif curl -s -H "Metadata-Flavor: Google" --connect-timeout 1 \
- http://169.254.169.254/computeMetadata/v1/ &>/dev/null; then
- CLOUD="GCP"
+detect_cloud() {
+CLOUD="local"
+
+curl -s --connect-timeout 1 \
+http://169.254.169.254/latest/meta-data/ >/dev/null && CLOUD="AWS"
+
+curl -s --connect-timeout 1 \
+-H Metadata:true \
+"http://169.254.169.254/metadata/instance?api-version=2021-02-01" \
+>/dev/null && CLOUD="Azure"
+
+curl -s --connect-timeout 1 \
+-H "Metadata-Flavor: Google" \
+http://metadata.google.internal >/dev/null && CLOUD="GCP"
+}
+
+detect_container() {
+if grep -qa docker /proc/1/cgroup 2>/dev/null; then
+ENVTYPE="Docker"
 else
- CLOUD="LOCAL"
+ENVTYPE="Host/VM"
 fi
 }
 
-detect_container(){
-grep -qa docker /proc/1/cgroup && ENV="Docker" || ENV="VM/Host"
-}
-
-run_detection(){
+run_detect() {
 detect_os
-detect_architecture
+detect_arch
 detect_pkg_manager
 detect_cloud
 detect_container
-}
 
-# ---------------- ENTERPRISE FEATURE ----------------
-# AUTO CLOUD PROFILE SWITCHING
-
-auto_profile(){
-run_detection
-
-echo -e "${CYAN}Auto Profile Selection:${RESET}"
-
-case $CLOUD in
-AWS)
- echo -e "${GREEN}AWS environment detected${RESET}"
- DEFAULT_TOOLS="docker aws terraform"
- ;;
-AZURE)
- echo -e "${GREEN}Azure environment detected${RESET}"
- DEFAULT_TOOLS="docker terraform"
- ;;
-GCP)
- echo -e "${GREEN}GCP environment detected${RESET}"
- DEFAULT_TOOLS="docker terraform"
- ;;
-LOCAL)
- echo -e "${YELLOW}Local environment detected${RESET}"
- DEFAULT_TOOLS="docker node"
- ;;
-esac
-}
-
-# ---------------- INSTALL ENGINE ----------------
-
-install_pkg(){
-case $PKG in
-apt) sudo apt update -y && sudo apt install -y "$1" ;;
-dnf|yum) sudo $PKG install -y "$1" ;;
-*) echo "Unsupported package manager" ;;
-esac
-}
-
-install_tools(){
-run_detection
-auto_profile
-
-echo -e "${CYAN}Installing profile tools: $DEFAULT_TOOLS${RESET}"
-
-for tool in $DEFAULT_TOOLS; do
- if command -v $tool &>/dev/null; then
-   echo -e "${GREEN}[✔] $tool exists${RESET}"
- else
-   echo -e "${CYAN}Installing $tool${RESET}"
-   install_pkg $tool
- fi
-done
-}
-
-# ---------------- INTERACTIVE ----------------
-
-interactive_mode(){
-banner
-echo "Install Docker? (y/n)"
-read d
-echo "Install Terraform? (y/n)"
-read t
-
-TOOLS=""
-[[ $d == y ]] && TOOLS="$TOOLS docker"
-[[ $t == y ]] && TOOLS="$TOOLS terraform"
-
-for tool in $TOOLS; do install_pkg $tool; done
-}
-
-# ---------------- DOCTOR ----------------
-
-doctor(){
-echo -e "${CYAN}System Health:${RESET}"
-for cmd in docker terraform git curl; do
-command -v $cmd &>/dev/null \
- && echo -e "${GREEN}[✔] $cmd${RESET}" \
- || echo -e "${RED}[✘] $cmd missing${RESET}"
-done
-}
-
-# ---------------- PLUGIN SYSTEM ----------------
-
-run_plugins(){
-for plugin in "$PLUGIN_DIR"/*.sh; do
-[ -f "$plugin" ] && bash "$plugin"
-done
-}
-
-# ---------------- UPDATE ----------------
-
-update_devsetupx(){
-echo "Updating DevSetupX..."
-curl -fsSL "$REPO_RAW/devsetupx" | sudo bash
-}
-
-# ---------------- CLEAN ----------------
-
-cleanup(){
-rm -rf ~/projects
-echo -e "${RED}Workspace cleaned${RESET}"
-}
-
-# ---------------- DETECT COMMAND ----------------
-
-detect_cmd(){
-run_detection
 echo "OS: $OS"
 echo "Architecture: $ARCH"
 echo "Package Manager: $PKG"
 echo "Cloud: $CLOUD"
-echo "Environment: $ENV"
+echo "Environment: $ENVTYPE"
 }
 
-# ---------------- HELP ----------------
+########################################
+# INSTALL ENGINE (IDEMPOTENT)
+########################################
+install_tool() {
+TOOL=$1
+if command -v "$TOOL" >/dev/null; then
+ ok "$TOOL already installed"
+ return
+fi
 
-help_menu(){
+info "Installing $TOOL..."
+
+case "$PKG" in
+ apt) sudo apt update && sudo apt install -y "$TOOL" ;;
+ yum|dnf) sudo $PKG install -y "$TOOL" ;;
+ brew) brew install "$TOOL" ;;
+ *) err "Unsupported package manager";;
+esac
+}
+
+########################################
+# AUTO CLOUD PROFILE SWITCH ⭐
+########################################
+cloud_profile() {
+case "$CLOUD" in
+ AWS) ok "AWS detected → preparing awscli profile"; install_tool awscli ;;
+ Azure) ok "Azure detected → preparing az cli"; install_tool azure-cli ;;
+ GCP) ok "GCP detected → preparing gcloud"; install_tool google-cloud-cli ;;
+ *) info "Local environment detected";;
+esac
+}
+
+########################################
+# INTERACTIVE MODE
+########################################
+interactive() {
+banner
+run_detect
+cloud_profile
+
+echo ""
+echo "Select tool:"
+echo "1) git"
+echo "2) docker"
+echo "3) kubectl"
+read -p "Choice: " c
+
+case $c in
+1) install_tool git ;;
+2) install_tool docker ;;
+3) install_tool kubectl ;;
+*) warn "Invalid choice" ;;
+esac
+}
+
+########################################
+# DOCTOR
+########################################
+doctor() {
+info "Running health checks..."
+
+for cmd in git curl; do
+ command -v $cmd >/dev/null \
+   && ok "$cmd OK" \
+   || warn "$cmd missing"
+done
+}
+
+########################################
+# PLUGIN SYSTEM
+########################################
+load_plugins() {
+PLUGIN_DIR="$HOME/.devsetupx/plugins"
+[ -d "$PLUGIN_DIR" ] || return
+
+for p in "$PLUGIN_DIR"/*.sh; do
+ [ -f "$p" ] && source "$p"
+done
+}
+
+########################################
+# SELF UPDATE
+########################################
+self_update() {
+info "Checking updates..."
+LATEST=$(curl -s $REPO_URL/VERSION_X)
+
+if [ "$LATEST" != "$VERSION" ]; then
+ info "Updating to $LATEST"
+ sudo curl -fsSL $REPO_URL/devsetupx \
+   -o /usr/local/bin/devsetupx
+ sudo chmod +x /usr/local/bin/devsetupx
+ ok "Updated!"
+else
+ ok "Already latest"
+fi
+}
+
+########################################
+# HELP
+########################################
+help_menu() {
 banner
 cat <<EOF
 Usage: devsetupx <command>
 
 Commands:
- install        Auto intelligent install
- detect         Show environment detection
- doctor         Health check
- update         Self update
- clean          Cleanup workspace
- --interactive  Interactive install
- -i             Interactive shortcut
- --version      Show version
+ detect        Show system info
+ doctor        Health check
+ install <pkg> Install package
+ interactive   Guided install mode
+ update        Self update
+ clean         Clear logs
+ --version     Show version
+ --help        Help
 EOF
 }
 
-# ---------------- ROUTER ----------------
+########################################
+# CLEAN
+########################################
+clean_logs() {
+rm -f "$LOG_FILE"
+ok "Logs cleaned"
+}
+
+########################################
+# ROUTER (ENTERPRISE CLI)
+########################################
+load_plugins
+detect_os
+detect_arch
+detect_pkg_manager
+detect_cloud
+detect_container
 
 case "$1" in
-install) banner; install_tools ;;
-detect) detect_cmd ;;
-doctor) doctor ;;
-update) update_devsetupx ;;
-clean) cleanup ;;
---interactive|-i) interactive_mode ;;
---version) echo "DevSetupX v$VERSION" ;;
-*) help_menu ;;
->>>>>>> 197d573 (Add DevSetupX v1.0.1 enterprise CLI with cloud detection and improvements)
+ detect) run_detect ;;
+ doctor) doctor ;;
+ install) install_tool "$2" ;;
+ interactive|-i) interactive ;;
+ update) self_update ;;
+ clean) clean_logs ;;
+ --version) echo "DevSetupX v$VERSION" ;;
+ --help|"") help_menu ;;
+ *) err "Unknown command"; help_menu ;;
 esac
