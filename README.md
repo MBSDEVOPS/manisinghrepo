@@ -15,7 +15,7 @@ Welcome to my DevOps repository showcasing cloud automation, DevOps tools, and r
 ---
 ## 🎬 DevSetup CLI Demo
 
-[![asciicast](https://asciinema.org/a/bIdaAbNG3XZONzMd.svg)](https://asciinema.org/a/bIdaAbNG3XZONzMd)
+[View Demo](./demo.html)
 
 ## ⭐ Featured Project: DevSetup CLI Tool v1.0
 
