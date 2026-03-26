@@ -15,7 +15,7 @@ Welcome to my DevOps repository showcasing cloud automation, DevOps tools, and r
 ---
 ## 🎬 DevSetup CLI Demo
 
-[View Demo](./demo.html)
+[▶ View Demo](https://MBSDEVOPS.github.io/manisinghrepo/demo.html)
 
 ## ⭐ Featured Project: DevSetup CLI Tool v1.0
 
