@@ -14,6 +14,10 @@ Welcome to my DevOps repository showcasing cloud automation, DevOps tools, and r
 
 ---
 
+## 🏗️ DevSetup & DevSetupX Architecture
+
+![DevSetup Architecture](assets/diagrams/architecture.png)
+
 ## ⭐ Featured Project: DevSetup CLI Tool v1.0
 
 **DevSetup** is a modular CLI-based DevOps automation tool that provisions a complete development environment on Linux or AWS EC2 using a single command.
