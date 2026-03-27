@@ -87,7 +87,7 @@ install_pkg(){
     apt) sudo apt-get update -y && sudo apt-get install -y "$PK" ;;
     dnf|yum) sudo $PKG install -y "$PK" ;;
     brew) brew install "$PK" ;;
-    *) error "Unsupported package manager"; exit 1 ;;
+    *) error "Unsupported package manager"; return ;;
   esac
   success "$PK installed"
 }
@@ -119,27 +119,17 @@ detect_cloud
 info "OS: $OS | ARCH: $ARCH | PKG: $PKG | CLOUD: $CLOUD"
 
 ########################################
-# CLOUD PROFILE
-########################################
-cloud_profile(){
-  case "$CLOUD" in
-    AWS) install_pkg awscli ;;
-    Azure) install_pkg azure-cli ;;
-    GCP) install_pkg google-cloud-cli ;;
-    *) info "Local environment detected" ;;
-  esac
-}
-
-########################################
 # INSTALLERS
 ########################################
 install_docker(){ install_pkg docker.io; sudo systemctl enable docker || true; sudo systemctl start docker || true; sudo usermod -aG docker "$USER"; }
-install_docker_compose(){ install_pkg docker-compose; }
-install_kubectl(){ install_pkg kubectl || true; }
-install_terraform(){ install_pkg terraform || true; }
+install_docker_compose(){ [[ "$PKG" == "apt" ]] && install_pkg docker-compose-plugin || install_pkg docker-compose; }
+install_kubectl(){ install_pkg kubectl || warn "kubectl install failed"; }
+install_terraform(){ install_pkg terraform || warn "terraform install failed"; }
 install_node(){ install_pkg nodejs; install_pkg npm; }
 install_aws(){ install_pkg awscli; }
-install_openshift(){ install_pkg origin-clients || true; }
+install_azure(){ install_pkg azure-cli; }
+install_gcp(){ install_pkg google-cloud-cli; }
+install_openshift(){ install_pkg origin-clients || warn "OpenShift install failed"; }
 
 install_ansible(){
   install_pkg python3
@@ -151,10 +141,9 @@ install_ansible(){
 
   export PATH=$PATH:$HOME/.local/bin
 
-  ansible --version >/dev/null && success "Ansible installed successfully" || { error "Ansible failed"; exit 1; }
+  ansible --version >/dev/null && success "Ansible installed successfully" || { warn "Ansible failed"; }
 
   mkdir -p ~/ansible
-
 cat <<EOF > ~/ansible/hosts
 [local]
 localhost ansible_connection=local
@@ -178,20 +167,21 @@ EOF
 ask_install(){
   read -p "Do you want to install $1? (y/n): " choice
   case "$choice" in
-    y|Y) $2 ;;
+    y|Y) info "Installing $1..."; $2 || warn "$1 installation failed, continuing..." ;;
     n|N) info "Skipping $1" ;;
     *) warn "Invalid choice, skipping $1" ;;
   esac
 }
 
 install_all_interactive(){
-  cloud_profile
+  ask_install "AWS CLI" install_aws
+  ask_install "Azure CLI" install_azure
+  ask_install "GCP CLI" install_gcp
   ask_install "Docker" install_docker
   ask_install "Docker Compose" install_docker_compose
   ask_install "kubectl" install_kubectl
   ask_install "Terraform" install_terraform
   ask_install "Node.js" install_node
-  ask_install "AWS CLI" install_aws
   ask_install "Ansible (Enterprise)" install_ansible
   ask_install "OpenShift CLI" install_openshift
 }
@@ -200,19 +190,20 @@ install_all_interactive(){
 # AUTOMATION INSTALL
 ########################################
 install_all(){
-  cloud_profile
+  install_aws
+  install_azure
+  install_gcp
   install_docker
   install_docker_compose
   install_kubectl
   install_terraform
   install_node
-  install_aws
   install_ansible
   install_openshift
 }
 
 ########################################
-# MENU (OPTIONAL)
+# MENU
 ########################################
 menu(){
 while true; do
@@ -223,9 +214,11 @@ echo "3) kubectl"
 echo "4) Terraform"
 echo "5) Node.js"
 echo "6) AWS CLI"
-echo "7) Ansible (Enterprise)"
-echo "8) OpenShift CLI"
-echo "9) Install ALL"
+echo "7) Azure CLI"
+echo "8) GCP CLI"
+echo "9) Ansible (Enterprise)"
+echo "10) OpenShift CLI"
+echo "11) Install ALL"
 echo "0) Exit"
 
 read -p "Choose option: " opt
@@ -237,9 +230,11 @@ case $opt in
 4) install_terraform ;;
 5) install_node ;;
 6) install_aws ;;
-7) install_ansible ;;
-8) install_openshift ;;
-9) install_all ;;
+7) install_azure ;;
+8) install_gcp ;;
+9) install_ansible ;;
+10) install_openshift ;;
+11) install_all ;;
 0) exit 0 ;;
 *) warn "Invalid option" ;;
 esac
@@ -257,6 +252,8 @@ if [[ "${1:-}" == "--auto" ]]; then
     terraform) install_terraform ;;
     node) install_node ;;
     aws) install_aws ;;
+    azure) install_azure ;;
+    gcp) install_gcp ;;
     ansible) install_ansible ;;
     openshift) install_openshift ;;
     all) install_all ;;
