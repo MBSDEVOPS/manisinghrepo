@@ -63,21 +63,13 @@ detect_pkg(){
 
 detect_cloud(){
   CLOUD="Local"
-
-  curl -s --connect-timeout 1 http://169.254.169.254/latest/meta-data/ \
-    >/dev/null && CLOUD="AWS"
-
-  curl -s -H Metadata:true \
-    "http://169.254.169.254/metadata/instance?api-version=2021-02-01" \
-    >/dev/null 2>&1 && CLOUD="Azure"
-
-  curl -s -H "Metadata-Flavor: Google" \
-    http://metadata.google.internal \
-    >/dev/null 2>&1 && CLOUD="GCP"
+  curl -s --connect-timeout 1 http://169.254.169.254/latest/meta-data/ >/dev/null 2>&1 && CLOUD="AWS"
+  curl -s -H Metadata:true "http://169.254.169.254/metadata/instance?api-version=2021-02-01" >/dev/null 2>&1 && CLOUD="Azure"
+  curl -s -H "Metadata-Flavor: Google" http://metadata.google.internal >/dev/null 2>&1 && CLOUD="GCP"
 }
 
 ########################################
-# TOOL DETECTION (IDEMPOTENT CORE)
+# TOOL DETECTION
 ########################################
 already_installed(){
   command -v "$1" >/dev/null 2>&1
@@ -85,26 +77,23 @@ already_installed(){
 
 install_pkg(){
   PK=$1
-
   if already_installed "$PK"; then
     success "$PK already installed (skipped)"
     return
   fi
 
   info "Installing $PK..."
-
   case "$PKG" in
     apt) sudo apt-get update -y && sudo apt-get install -y "$PK" ;;
     dnf|yum) sudo $PKG install -y "$PK" ;;
     brew) brew install "$PK" ;;
     *) error "Unsupported package manager"; exit 1 ;;
   esac
-
   success "$PK installed"
 }
 
 ########################################
-# BANNER (UNCHANGED STYLE)
+# BANNER
 ########################################
 clear
 echo -e "${MAGENTA}"
@@ -127,11 +116,10 @@ detect_os
 detect_arch
 detect_pkg
 detect_cloud
-
 info "OS: $OS | ARCH: $ARCH | PKG: $PKG | CLOUD: $CLOUD"
 
 ########################################
-# CLOUD PROFILE SWITCH
+# CLOUD PROFILE
 ########################################
 cloud_profile(){
   case "$CLOUD" in
@@ -145,13 +133,7 @@ cloud_profile(){
 ########################################
 # INSTALLERS
 ########################################
-install_docker(){
-  install_pkg docker.io
-  sudo systemctl enable docker || true
-  sudo systemctl start docker || true
-  sudo usermod -aG docker "$USER"
-}
-
+install_docker(){ install_pkg docker.io; sudo systemctl enable docker || true; sudo systemctl start docker || true; sudo usermod -aG docker "$USER"; }
 install_docker_compose(){ install_pkg docker-compose; }
 install_kubectl(){ install_pkg kubectl || true; }
 install_terraform(){ install_pkg terraform || true; }
@@ -159,11 +141,7 @@ install_node(){ install_pkg nodejs; install_pkg npm; }
 install_aws(){ install_pkg awscli; }
 install_openshift(){ install_pkg origin-clients || true; }
 
-########################################
-# ENTERPRISE ANSIBLE SETUP
-########################################
 install_ansible(){
-
   install_pkg python3
   install_pkg python3-pip
   install_pkg sshpass
@@ -173,9 +151,7 @@ install_ansible(){
 
   export PATH=$PATH:$HOME/.local/bin
 
-  ansible --version >/dev/null \
-      && success "Ansible installed successfully" \
-      || { error "Ansible failed"; exit 1; }
+  ansible --version >/dev/null && success "Ansible installed successfully" || { error "Ansible failed"; exit 1; }
 
   mkdir -p ~/ansible
 
@@ -197,7 +173,31 @@ EOF
 }
 
 ########################################
-# INSTALL ALL
+# INTERACTIVE INSTALLATION
+########################################
+ask_install(){
+  read -p "Do you want to install $1? (y/n): " choice
+  case "$choice" in
+    y|Y) $2 ;;
+    n|N) info "Skipping $1" ;;
+    *) warn "Invalid choice, skipping $1" ;;
+  esac
+}
+
+install_all_interactive(){
+  cloud_profile
+  ask_install "Docker" install_docker
+  ask_install "Docker Compose" install_docker_compose
+  ask_install "kubectl" install_kubectl
+  ask_install "Terraform" install_terraform
+  ask_install "Node.js" install_node
+  ask_install "AWS CLI" install_aws
+  ask_install "Ansible (Enterprise)" install_ansible
+  ask_install "OpenShift CLI" install_openshift
+}
+
+########################################
+# AUTOMATION INSTALL
 ########################################
 install_all(){
   cloud_profile
@@ -212,7 +212,7 @@ install_all(){
 }
 
 ########################################
-# MENU (UNCHANGED)
+# MENU (OPTIONAL)
 ########################################
 menu(){
 while true; do
@@ -247,7 +247,7 @@ done
 }
 
 ########################################
-# AUTOMATION MODE
+# ENTRY POINT
 ########################################
 if [[ "${1:-}" == "--auto" ]]; then
   case "${2:-}" in
@@ -262,6 +262,8 @@ if [[ "${1:-}" == "--auto" ]]; then
     all) install_all ;;
     *) error "Unknown automation target" ;;
   esac
+elif [[ "${1:-}" == "--interactive" ]]; then
+  install_all_interactive
 else
   menu
 fi
