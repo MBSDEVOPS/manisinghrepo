@@ -1,167 +1,101 @@
-🚀 DevSetupX — Enterprise DevOps Bootstrap CLI
+# 🚀 DevSetupX — Enterprise DevOps Bootstrap CLI
 
-![Version](https://img.shields.io/badge/version-v1.0.1-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Shell](https://img.shields.io/badge/shell-bash-orange)
+![Version](https://img.shields.io/badge/version-1.0.1-blue?style=for-the-badge)
+![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
+![Platforms](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-lightgrey?style=for-the-badge)
 
----
+🔥 **Your ultimate DevOps bootstrap CLI for enterprise environments!**
 
-## 🎯 Overview
 
-**DevSetupX** is an enterprise-grade DevOps automation CLI that provides
-zero-configuration environment setup using intelligent system detection.
+██████╗ ███████╗██╗ ██╗███████╗███████╗████████╗██╗ ██╗██████╗ ██╗ ██╗
+██╔══██╗██╔════╝██║ ██║██╔════╝██╔════╝╚══██╔══╝██║ ██║██╔══██╗╚██╗██╔╝
+██║ ██║█████╗ ██║ ██║███████╗█████╗ ██║ ██║ ██║██████╔╝ ╚███╔╝
+██║ ██║██╔══╝ ╚██╗ ██╔╝╚════██║██╔══╝ ██║ ██║ ██║██╔═══╝ ██╔██╗
+██████╔╝███████╗ ╚████╔╝ ███████║███████╗ ██║ ╚██████╔╝██║ ██╔╝ ██╗
+╚═════╝ ╚══════╝ ╚═══╝ ╚══════╝╚══════╝ ╚═╝ ╚═════╝ ╚═╝ ╚═╝ ╚═╝
 
-It automatically detects:
 
-- Operating System
-- Architecture
-- Package Manager
-- Cloud Provider
-- Container Environment
-
-and prepares a ready-to-use DevOps environment.
+### 👤 Creator
+**Manibhushan Singh** — Enterprise DevOps Engineer & Automation Enthusiast  
 
 ---
 
-## ⭐ Key Features
+## 💡 Features
 
-### 🧭 Enterprise CLI Design
-- Clean command router
-- Single-file production CLI
-- Safe output handling
-- Colored terminal UI
-
----
-
-### ⚙️ Installation Modes
-- Interactive mode
-- Automation mode
-- Idempotent installs
-
-
-devsetupx --interactive
-devsetupx install
-
+- 🎨 Original ASCII banner style  
+- 🌈 Colored professional output  
+- 🤖 Interactive & Automation modes (`--interactive`, `--auto`)  
+- ⚙ Enterprise Ansible setup  
+- 🐳 Docker + Docker Compose  
+- ☸ Kubernetes (kubectl)  
+- 🌍 AWS CLI  
+- 📦 Terraform  
+- 🟢 Node.js + npm  
+- 🔴 OpenShift CLI  
+- ✅ Stability improvements  
+- ☁ Correct cloud detection (AWS / Azure / GCP / Local)  
+- 💫 Dry-run simulation (`--dry-run`)  
+- 🔄 Idempotent installs  
+- ⏳ Tiny spinner/progress indicator for professional feel  
 
 ---
 
-### 🖥️ System Intelligence
-- OS detection
-- Architecture detection (amd64 / arm64)
-- Package manager auto detection
+## ⚡ Quick Install / Update
 
----
-
-### ☁️ Cloud Auto Detection
-
-DevSetupX automatically detects:
-
-| Cloud | Action |
-|---|---|
-| AWS | AWS CLI profile setup |
-| Azure | AZ environment ready |
-| GCP | gcloud preparation |
-| Local | Generic setup |
-
-⭐ **Auto Cloud Profile Switching**
-No manual configuration required.
-
----
-
-### 📦 Container Awareness
-Detects:
-- Docker containers
-- Virtual machines
-- Bare-metal hosts
-
----
-
-### 🔌 Plugin System
-
-Extend DevSetupX without modifying core code.
-
-Location:
-
-
-~/.devsetupx/plugins/
-
-
-Example:
-
-
-plugins/
-└── terraform.sh
-
-
----
-
-### 🩺 Health & Diagnostics
-
-
-devsetupx detect
-devsetupx doctor
-
-
-- Environment inspection
-- Dependency validation
-- Setup recommendations
-
----
-
-### 🔄 Self Update
-
-
-devsetupx update
-
-
-Pulls latest version directly from GitHub.
-
----
-
-## 📦 Installation
-
-### Quick Install
+Run this one-liner to **install or update DevSetupX**:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/MBSDEVOPS/manisinghrepo/main/devsetupx -o devsetupx
-chmod +x devsetupx
-./devsetupx --interactive
-Global Install
-sudo mv devsetupx /usr/local/bin/
-devsetupx --help
-🧪 Commands
-Command	Description
-detect	Show environment info
-doctor	Health check
-install	Automated setup
-update	Self update
-clean	Cleanup cache
---interactive	Guided setup
-🏗 Architecture
+curl -fsSL https://raw.githubusercontent.com/MBSDEVOPS/manisinghrepo/main/devsetupx | sudo tee /usr/local/bin/devsetupx >/dev/null && sudo chmod +x /usr/local/bin/devsetupx && echo "✔ DevSetupX installed/updated successfully"
 
-DevSetupX follows enterprise DevOps platform patterns:
+🏃 Usage
+1️⃣ Interactive Mode
 
-Zero-config onboarding
-Cloud-aware automation
-Plugin extensibility
-Idempotent operations
-Single-file deployment
+Ask yes/no for each tool:
 
-📌 Version
-DevSetupX v1.0.1
-Enterprise Stable Release
+devsetupx --interactive
+
+2️⃣ Automation Mode
+
+Install a single tool:
+
+devsetupx --auto docker       # Docker only
+devsetupx --auto terraform    # Terraform only
+
+Install all tools automatically:
+
+devsetupx --auto all
+
+3️⃣ Dry-Run Mode
+
+Simulate installation without making changes:
+
+devsetupx --dry-run all
+
+4️⃣ Optional Alias
+Make it shorter to run:
+
+echo 'alias dsx="devsetupx"' >> ~/.bashrc
+source ~/.bashrc
+dsx --interactive
+
+🌐 Supported Platforms
+Linux (Debian/Ubuntu, RHEL/CentOS, Fedora, Amazon Linux)
+macOS (brew)
+Windows (via WSL)
+
+🛠️ Example Workflow
+# Install or update DevSetupX
+curl -fsSL https://raw.githubusercontent.com/MBSDEVOPS/manisinghrepo/main/devsetupx | sudo tee /usr/local/bin/devsetupx >/dev/null && sudo chmod +x /usr/local/bin/devsetupx
+
+# Interactive install
+devsetupx --interactive
+
+# Automation install
+devsetupx --auto all
+
+# Dry-run simulation
+devsetupx --dry-run all
 
 📜 License
 
-MIT License — see LICENSE
-
-👨‍💻 Author
-
-Manibhushan Singh
-DevOps Engineer — Platform Automation
-
-GitHub: https://github.com/MBSDEVOPS
-
-⭐ Vision
-
-DevSetupX aims to become the kubectl for DevOps environment setup.
+MIT License — free to use, modify, and distribute.
