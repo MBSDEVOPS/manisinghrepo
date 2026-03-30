@@ -1,0 +1,250 @@
+#!/usr/bin/env bash
+# =====================================================
+# DevSetupX — Enterprise DevOps Bootstrap CLI
+# Version: 1.0.1
+# Creator: Manibhushan Singh
+# =====================================================
+
+set -euo pipefail
+
+########################################
+# COLORS
+########################################
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+MAGENTA='\033[1;35m'
+NC='\033[0m'
+
+success(){ echo -e "${GREEN}✔ $1${NC}"; }
+error(){ echo -e "${RED}✖ $1${NC}"; }
+info(){ echo -e "${CYAN}➜ $1${NC}"; }
+warn(){ echo -e "${YELLOW}⚠ $1${NC}"; }
+
+########################################
+# SAFETY CHECKS
+########################################
+command -v sudo >/dev/null || { echo "sudo required"; exit 1; }
+
+########################################
+# DETECTION ENGINE
+########################################
+detect_os(){ 
+    case "$(uname -s)" in 
+        Linux*) OS="Linux" ;; 
+        Darwin*) OS="macOS" ;; 
+        *) OS="Unknown" ;; 
+    esac 
+}
+detect_arch(){ 
+    case "$(uname -m)" in 
+        x86_64) ARCH="amd64" ;; 
+        aarch64|arm64) ARCH="arm64" ;; 
+        *) ARCH="unknown" ;; 
+    esac 
+}
+detect_pkg(){ 
+    if command -v apt >/dev/null; then PKG="apt"
+    elif command -v dnf >/dev/null; then PKG="dnf"
+    elif command -v yum >/dev/null; then PKG="yum"
+    elif command -v brew >/dev/null; then PKG="brew"
+    else PKG="unknown"
+    fi
+}
+
+########################################
+# TOOL DETECTION
+########################################
+already_installed(){ command -v "$1" >/dev/null 2>&1; }
+install_pkg(){ 
+    PK=$1
+    if already_installed "$PK"; then 
+        success "$PK already installed (skipped)"; 
+        return 
+    fi
+    info "Installing $PK..."
+    case "$PKG" in 
+        apt) sudo apt-get update -y && sudo apt-get install -y "$PK" ;; 
+        dnf|yum) sudo $PKG install -y "$PK" ;; 
+        brew) brew install "$PK" ;; 
+        *) error "Unsupported package manager"; return ;; 
+    esac
+    success "$PK installed"
+}
+
+########################################
+# BANNER
+########################################
+clear
+echo -e "${MAGENTA}"
+echo "██████╗ ███████╗██╗   ██╗███████╗███████╗████████╗██╗   ██╗██████╗ ██╗   ██╗"
+echo "██╔══██╗██╔════╝██║   ██║██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗╚██╗ ██╔╝"
+echo "██║  ██║█████╗  ██║   ██║███████╗█████╗     ██║   ██║   ██║██████╔╝ ╚███╔╝ "
+echo "██║  ██║██╔══╝  ╚██╗ ██╔╝╚════██║██╔══╝     ██║   ██║   ██║██╔═══╝ ██╔██╗ "
+echo "██████╔╝███████╗ ╚████╔╝ ███████║███████╗   ██║   ╚██████╔╝██║     ██║ ╚██╗"
+echo "╚═════╝ ╚══════╝  ╚═══╝  ╚══════╝╚══════╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝  ╚═╝"
+echo ""
+echo -e "${CYAN} Enterprise DevOps Bootstrap CLI v1.0.1${NC}"
+echo -e "${YELLOW} Creator: Manibhushan Singh${NC}"
+echo -e "${MAGENTA}══════════════════════════════════════════════════════════════════${NC}"
+echo ""
+
+########################################
+# INSTALLERS
+########################################
+install_docker(){ install_pkg docker.io; sudo systemctl enable docker || true; sudo systemctl start docker || true; sudo usermod -aG docker "$USER"; }
+install_docker_compose(){ [[ "$PKG" == "apt" ]] && install_pkg docker-compose-plugin || install_pkg docker-compose; }
+install_kubectl(){ install_pkg kubectl || warn "kubectl install failed"; }
+install_terraform(){ install_pkg terraform || warn "terraform install failed"; }
+install_node(){ install_pkg nodejs; install_pkg npm; }
+install_aws(){ install_pkg awscli; }
+install_azure(){ install_pkg azure-cli; }
+install_gcp(){ install_pkg google-cloud-cli; }
+install_openshift(){ install_pkg origin-clients || warn "OpenShift install failed"; }
+install_ansible(){ 
+    install_pkg python3
+    install_pkg python3-pip
+    install_pkg sshpass
+    pip3 install --user --upgrade pip
+    pip3 install --user ansible-core
+    export PATH=$PATH:$HOME/.local/bin
+    ansible --version >/dev/null && success "Ansible installed successfully" || { warn "Ansible failed"; }
+    mkdir -p ~/ansible
+    cat <<EOF > ~/ansible/hosts
+[local]
+localhost ansible_connection=local
+EOF
+    cat <<EOF > ~/ansible/ansible.cfg
+[defaults]
+inventory = ./hosts
+host_key_checking = False
+retry_files_enabled = False
+EOF
+    [ -f ~/.ssh/id_rsa ] || ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
+    success "Ansible fully configured"
+}
+
+########################################
+# INTERACTIVE INSTALL
+########################################
+ask_install(){ 
+    read -p "Do you want to install $1? (y/n): " choice
+    case "$choice" in
+        y|Y) info "Installing $1..."; $2 || warn "$1 installation failed, continuing..." ;;
+        n|N) info "Skipping $1" ;;
+        *) warn "Invalid choice, skipping $1" ;;
+    esac
+}
+
+install_all_interactive(){
+    ask_install "AWS CLI" install_aws
+    ask_install "Azure CLI" install_azure
+    ask_install "GCP CLI" install_gcp
+    ask_install "Docker" install_docker
+    ask_install "Docker Compose" install_docker_compose
+    ask_install "kubectl" install_kubectl
+    ask_install "Terraform" install_terraform
+    ask_install "Node.js" install_node
+    ask_install "Ansible (Enterprise)" install_ansible
+    ask_install "OpenShift CLI" install_openshift
+}
+
+########################################
+# AUTOMATION INSTALL
+########################################
+install_all(){
+    install_aws
+    install_azure
+    install_gcp
+    install_docker
+    install_docker_compose
+    install_kubectl
+    install_terraform
+    install_node
+    install_ansible
+    install_openshift
+}
+
+########################################
+# SAFE SELF-UPDATE
+########################################
+self_update(){
+    TMP_FILE="/tmp/devsetupx_update.sh"
+    echo "[INFO] Downloading latest DevSetupX..."
+    curl -fsSL https://raw.githubusercontent.com/MBSDEVOPS/manisinghrepo/main/devsetupx -o "$TMP_FILE"
+    if [[ ! -s "$TMP_FILE" ]]; then
+        echo "[ERROR] Download failed or file is empty. Update aborted."
+        rm -f "$TMP_FILE"
+        return 1
+    fi
+    sudo mv "$TMP_FILE" /usr/local/bin/devsetupx
+    sudo chmod 755 /usr/local/bin/devsetupx
+    sudo chown root:root /usr/local/bin/devsetupx
+    echo "[✔] DevSetupX updated successfully!"
+}
+
+########################################
+# MENU
+########################################
+menu(){
+    while true; do
+        echo ""
+        echo "1) Docker"
+        echo "2) Docker Compose"
+        echo "3) kubectl"
+        echo "4) Terraform"
+        echo "5) Node.js"
+        echo "6) AWS CLI"
+        echo "7) Azure CLI"
+        echo "8) GCP CLI"
+        echo "9) Ansible (Enterprise)"
+        echo "10) OpenShift CLI"
+        echo "11) Install ALL"
+        echo "0) Exit"
+        read -p "Choose option: " opt
+        case $opt in
+            1) install_docker ;;
+            2) install_docker_compose ;;
+            3) install_kubectl ;;
+            4) install_terraform ;;
+            5) install_node ;;
+            6) install_aws ;;
+            7) install_azure ;;
+            8) install_gcp ;;
+            9) install_ansible ;;
+            10) install_openshift ;;
+            11) install_all ;;
+            0) exit 0 ;;
+            *) warn "Invalid option" ;;
+        esac
+    done
+}
+
+########################################
+# ENTRY POINT
+########################################
+case "${1:-}" in
+    --auto)
+        case "${2:-}" in
+            docker) install_docker ;;
+            compose) install_docker_compose ;;
+            kubectl) install_kubectl ;;
+            terraform) install_terraform ;;
+            node) install_node ;;
+            aws) install_aws ;;
+            azure) install_azure ;;
+            gcp) install_gcp ;;
+            ansible) install_ansible ;;
+            openshift) install_openshift ;;
+            all) install_all ;;
+            *) error "Unknown automation target" ;;
+        esac
+        ;;
+    --interactive) install_all_interactive ;;
+    update) self_update ;;
+    --dry-run)
+        echo "[INFO] Dry-run mode: Commands will not be executed"
+        ;;
+    *) menu ;;
+esac
